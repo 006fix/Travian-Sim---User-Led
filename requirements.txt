@@ -1,0 +1,3 @@
+pandas
+numpy
+# random is provided by Python's standard library; no pip installation needed.
