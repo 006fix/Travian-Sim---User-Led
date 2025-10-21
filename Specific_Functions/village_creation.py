@@ -138,5 +138,4 @@ def create_village(map_dict, owner, quadrant=None, rng_holder=None):
     )
     map_dict[selected_key] = new_village
 
-    print(f"Player {owner} has made a village at {selected_key} within quadrant {chosen_quadrant}")
     return selected_key
