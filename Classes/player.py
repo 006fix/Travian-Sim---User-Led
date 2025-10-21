@@ -21,8 +21,7 @@ class Player:
         self.next_action = False
 
     def next_update(self):
-        #this is an outstanding issue, already logged within the issues doc. needs updating to reference here as well
-        #ditto updating this comment
+        # [ISS-004] placeholder scheduling logic; replace when proper event handling is built.
         if self.next_action == False:
             wait_duration = True
         else:

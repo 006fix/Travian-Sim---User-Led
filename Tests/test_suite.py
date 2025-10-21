@@ -44,11 +44,11 @@ def _extract_field_counts(field_dict: Dict[str, object]) -> Dict[str, int]:
 
 def test_map_determinism() -> Tuple[bool, str]:
     """Ensure identical seeds create identical worlds."""
-    radius = create_simulation_constraints(rng_seed=123, map_radius=2)
+    radius, _ = create_simulation_constraints(rng_seed=123, map_radius=2)
     first_world = modify_base_map(map_creation(radius))
     first_summary = _summarise_map(first_world)
 
-    radius = create_simulation_constraints(rng_seed=123, map_radius=2)
+    radius, _ = create_simulation_constraints(rng_seed=123, map_radius=2)
     second_world = modify_base_map(map_creation(radius))
     second_summary = _summarise_map(second_world)
 
@@ -63,8 +63,8 @@ def test_map_determinism() -> Tuple[bool, str]:
 def test_map_dimensions() -> Tuple[bool, str]:
     """Verify map size matches the configured radius."""
     radius = 3
-    create_simulation_constraints(rng_seed=999, map_radius=radius)
-    world = map_creation(radius)
+    radius_out, _ = create_simulation_constraints(rng_seed=999, map_radius=radius)
+    world = map_creation(radius_out)
     expected_tiles = (radius * 2 + 1) ** 2
     actual_tiles = len(world)
     if actual_tiles != expected_tiles:
@@ -77,7 +77,7 @@ def test_map_dimensions() -> Tuple[bool, str]:
 
 def test_habitable_fields_match_blueprint() -> Tuple[bool, str]:
     """Check each habitable tile instantiates the expected field composition."""
-    radius = create_simulation_constraints(rng_seed=321, map_radius=2)
+    radius, _ = create_simulation_constraints(rng_seed=321, map_radius=2)
     world = modify_base_map(map_creation(radius))
     mismatches: List[str] = []
     for key, tile in world.items():
@@ -99,7 +99,7 @@ def test_habitable_fields_match_blueprint() -> Tuple[bool, str]:
 
 def test_oasis_storage_matches_resources() -> Tuple[bool, str]:
     """Ensure oasis storage values align with advertised resources."""
-    radius = create_simulation_constraints(rng_seed=555, map_radius=2)
+    radius, _ = create_simulation_constraints(rng_seed=555, map_radius=2)
     world = modify_base_map(map_creation(radius))
     failures: List[str] = []
     for key, tile in world.items():
