@@ -1,0 +1,17 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.env/
+.venv/
+env/
+venv/
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+
+# Project-specific
+legacy_travian/
