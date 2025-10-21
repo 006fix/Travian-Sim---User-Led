@@ -21,5 +21,4 @@ class Village(base_squares.Square):
         self.buildings[1] = ['warehouse', 0, True]
         self.buildings[2] = ['granary', 0, True]
 
-
         ##LOTS MORE TO COME HERE
