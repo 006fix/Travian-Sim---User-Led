@@ -6,7 +6,7 @@ import random
 
 class Village(base_squares.Square):
     def __init__(self, location, type_hab, field_list_dict, owner, type_square='village'):
-        super.__init__(location)
+        super().__init__(location)
         self.location = location
         self.interactable = True
         self.type_hab = type_hab
