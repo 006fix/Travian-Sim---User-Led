@@ -1,9 +1,9 @@
 import sys
 from pathlib import Path
 if __package__ in (None, ""):
-    ROOT = Path(__file__).resolve().parents[1] # repo root
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+    ROOT = Path(__file__).resolve().parents[1]  # repo root
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
 #testing line, left in for functionality
 #print(sys.path[0])
 

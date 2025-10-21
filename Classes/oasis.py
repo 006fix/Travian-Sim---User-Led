@@ -46,8 +46,7 @@ class Oasis(loc_sq.Square):
         self.next_action = False
     
     def next_update(self):
-        #note - the below is inefficient, and should likely be flagged as non interacting in a more sensible way.
-        #should be flagged as an issue in a markup document - ammend this comment once complete.
+        # [ISS-003] placeholder non-interaction; replace with definitive oasis behaviour.
         if self.next_action == False:
             wait_duration = True
         else:

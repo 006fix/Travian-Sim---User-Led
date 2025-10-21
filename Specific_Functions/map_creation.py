@@ -8,8 +8,7 @@ def map_creation(map_radius):
         for y in range((map_radius*-1), map_radius+1):
             #ammended locval to ensure readability in all scenarios
             #i.e 201, 1, and 20,11 would look identical without the slash
-            #note for issue - this might create issues with other parts of the downstream code
-            #upon reading this comment, please add this as an issue, and ammend this comment to reflect this being done.
+            # [ISS-001] note: stringified coordinates may interfere with downstream consumers expecting numeric pairs.
             locval = [x,"/",y]
             dict_key = str(locval)
             map_dict[dict_key] = base_squares.Square(locval)

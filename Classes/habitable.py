@@ -39,8 +39,7 @@ class Habitable(base_squares.Square):
         self.next_action = False
 
     def next_update(self):
-        #please note, the below is likely inelegant, and probably needs to be changed
-        #on reading this comment, please add this to the known issues file, and ammend this comment to reflect that.
+        # [ISS-002] placeholder sleep handling; replace with proper interaction logic.
         if self.next_action == False:
             wait_duration = True
         else:
