@@ -7,9 +7,9 @@ if __package__ in (None, ""):
 #testing line, left in for functionality
 #print(sys.path[0])
 
-from master_controller.simulation_constraints import create_simulation_contraints
+from master_controller.simulation_constraints import create_simulation_constraints
 from Specific_Functions.map_creation import map_creation, modify_base_map
 
-map_radius = create_simulation_contraints()
+map_radius = create_simulation_constraints()
 base_map = map_creation(map_radius)
 base_map = modify_base_map(base_map)
