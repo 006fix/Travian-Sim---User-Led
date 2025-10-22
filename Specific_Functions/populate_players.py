@@ -34,5 +34,5 @@ def populate_players_with_villages(map_dict, num_players, rng_holder=None):
         except RuntimeError:
             failed_players.append(active_player.name)
     if len(failed_players) > 0:
-        print("Players unable to receive villages:", failed_players)
+        raise ValueError(f"Players unable to receive villages: {failed_players}")
     return player_dict
