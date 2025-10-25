@@ -23,6 +23,7 @@ class Village(base_squares.Square):
 
         #default instantiation values
         self.storage_cap = [800, 800, 800, 800]
+        self.stored = [800,800,800,800]
 
     #function to calculate storage, ignoring existence of the premade 800 setup for empty vils
     def calculate_storage(self):
@@ -84,53 +85,44 @@ class Village(base_squares.Square):
     
     
     def possible_buildings(self):
-        possible_buildings = [[], []]
+        #modified to dictionary variant to store both in one item
+        possible_buildings = {'buildings' : [], 'fields' : []}
         for key in self.buildings:
-            # this bottom one is simply for now, since i've put those holders in
-            # remove this whole step later
             holdval = self.buildings[key]
-            #THIS IS ALSO JUST TO STOP IT BREAKING FROM THE NULL VALUES
-            #but maybe keep long term?
+            #if buildings exist that can be built
             if len(holdval) > 1:
                 holdval_level = holdval[1]
                 #if upgradeable
                 if holdval[2] == True:
                     keyval = holdval[0]
-                    #HOW DO I KNOW THE BUILDINGS LEVEL?
-                    upgrade_cost = building_data.building_dict[keyval][holdval_level][0]
-                    #BOTH ARE REQUIRED, BECAUSE IF COND1-4 ARE TRUE, BUT COND5-8 AREN'T, IT'S A FUTURE POSSIBLE
-                    #WORK IT OUT LATER
-                    #print(f"My upgrade cost is {upgrade_cost}")
-                    #print(f"My storage cap is {self.storage_cap}")
-                    cond1 = upgrade_cost[0] < self.storage_cap[0]
-                    cond2 = upgrade_cost[1] < self.storage_cap[1]
-                    cond3 = upgrade_cost[2] < self.storage_cap[2]
-                    cond4 = upgrade_cost[3] < self.storage_cap[3]
-                    cond5 = upgrade_cost[0] <= self.stored[0]
-                    cond6 = upgrade_cost[1] <= self.stored[1]
-                    cond7 = upgrade_cost[2] <= self.stored[2]
-                    cond8 = upgrade_cost[3] <= self.stored[3]
-                    if cond1 and cond2 and cond3 and cond4 and cond5 and cond6 and cond7 and cond8:
-                        #builings go in list 1
+                    upgrade_cost = b_data.building_dict[keyval][holdval_level][0]
+                    #default to assuming enough res, then make false if not true
+                    enough_res = True
+                    for i in range(4):
+                        if upgrade_cost[i] >= self.stored[i]:
+                            enough_res = False
+                    if enough_res:
+                        #builings go in appropriate dict entry
                         #passed as a two part list, to provide the key and the name
                         final_value = [key, holdval[0]]
-                        possible_buildings[0].append(final_value)
+                        dictval = possible_buildings['buildings']
+                        dictval.append(final_value)
+                        possible_buildings['buildings'] = dictval
         for key in self.fields:
             holdval = self.fields[key]
             holdval_level = holdval.level
             key2 = key[:4]
-            upgrade_cost = fields_data.field_dict[key2][holdval_level][0]
-            cond1 = upgrade_cost[0] < self.storage_cap[0]
-            cond2 = upgrade_cost[1] < self.storage_cap[1]
-            cond3 = upgrade_cost[2] < self.storage_cap[2]
-            cond4 = upgrade_cost[3] < self.storage_cap[3]
-            cond5 = upgrade_cost[0] <= self.stored[0]
-            cond6 = upgrade_cost[1] <= self.stored[1]
-            cond7 = upgrade_cost[2] <= self.stored[2]
-            cond8 = upgrade_cost[3] <= self.stored[3]
-            #new condition added here, since the upgradeability of the fields is stored seperately
-            if len(upgrade_cost) > 1 and cond1 and cond2 and cond3 and cond4 and cond5 and cond6 and cond7 and cond8:
-                #fields go in list two
-                possible_buildings[1].append(key)
+            upgrade_cost = f_data.field_dict[key2][holdval_level][0]
+            if len(upgrade_cost) > 1:
+                enough_res = True
+                for i in range(4):
+                    if upgrade_cost[i] >= self.stored[i]:
+                        enough_res = False
+                if enough_res:
+                #fields go in appropriate dict entry
+                final_value = [key]
+                dictval = possible_buildings['fields']
+                dictval.append(final_value)
+                possible_buildings['fields'] = dictval
         return possible_buildings   
 
