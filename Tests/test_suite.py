@@ -12,6 +12,10 @@ import random
 
 from master_controller.simulation_constraints import create_simulation_constraints
 from Specific_Functions.map_creation import map_creation, modify_base_map
+from Specific_Functions.populate_players import (
+    populate_players,
+    populate_players_with_villages,
+)
 
 
 def _summarise_map(world: Dict[str, object]) -> List[Dict[str, object]]:
@@ -121,11 +125,69 @@ def test_oasis_storage_matches_resources() -> Tuple[bool, str]:
     return True, "All oasis tiles report storage aligned with their resources."
 
 
+def test_populate_players_basic() -> Tuple[bool, str]:
+    """Ensure populate_players creates the requested number of players with empty villages."""
+    players = populate_players(5)
+    if len(players) != 5:
+        return False, f"Expected 5 players, received {len(players)}"
+    if len(set(players.keys())) != len(players):
+        return False, "Player dictionary contains duplicate keys"
+    for name, obj in players.items():
+        if obj.villages != []:
+            return False, f"Player {name} should start without villages, found {obj.villages}"
+    return True, "populate_players builds unique players with empty village lists."
+
+
+def _build_world(map_radius: int, seed: int) -> Dict[str, object]:
+    radius, _ = create_simulation_constraints(rng_seed=seed, map_radius=map_radius)
+    return modify_base_map(map_creation(radius))
+
+
+def test_populate_players_with_villages_assigns_tiles() -> Tuple[bool, str]:
+    """Check players receive exactly one village and the map updates accordingly."""
+    world = _build_world(30, seed=200)
+    rng_holder = random.Random(500)
+    players = populate_players_with_villages(world, 8, rng_holder=rng_holder)
+
+    if len(players) != 8:
+        return False, f"Expected 8 players, received {len(players)}"
+
+    taken_tiles: List[str] = []
+    for name, obj in players.items():
+        if len(obj.villages) != 1:
+            return False, f"Player {name} has villages {obj.villages}; expected exactly one."
+        tile_key = obj.villages[0]
+        if tile_key in taken_tiles:
+            return False, f"Village {tile_key} assigned to multiple players."
+        taken_tiles.append(tile_key)
+        tile = world.get(tile_key)
+        if tile is None or getattr(tile, "type_square", None) != "village":
+            return False, f"Map entry {tile_key} was not converted into a village."
+    return True, "populate_players_with_villages attaches one unique village per player."
+
+
+def test_populate_players_with_villages_handles_saturation() -> Tuple[bool, str]:
+    """Verify the helper reports failure when no eligible tiles exist."""
+    world = _build_world(20, seed=123)
+    rng_holder = random.Random(250)
+    try:
+        populate_players_with_villages(world, 1, rng_holder=rng_holder)
+    except ValueError as exc:
+        message = str(exc)
+        if "Players unable to receive villages" not in message:
+            return False, f"Raised ValueError but message was unexpected: {message}"
+        return True, "populate_players_with_villages surfaces saturation as a ValueError."
+    return False, "Expected populate_players_with_villages to raise when the map is saturated."
+
+
 TESTS = [
     ("Map determinism with seeded RNG", test_map_determinism),
     ("Map dimensions respect radius", test_map_dimensions),
     ("Habitable field composition", test_habitable_fields_match_blueprint),
     ("Oasis storage consistency", test_oasis_storage_matches_resources),
+    ("populate_players basic behaviour", test_populate_players_basic),
+    ("populate_players_with_villages assignment", test_populate_players_with_villages_assigns_tiles),
+    ("populate_players_with_villages saturation handling", test_populate_players_with_villages_handles_saturation),
 ]
 
 
