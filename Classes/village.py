@@ -42,10 +42,10 @@ class Village(base_squares.Square):
                     storage = b_data.building_dict['granary'][level][4]
                     granary_storage += storage
             #extra section to stop it setting back to 0 if buildings destroyed
-            self.storage_cap = [warehouse_storage, warehouse_storage, warehouse_storage, granary_storage]
-            for i in range(len(self.storage_cap)):
-                if self.storage_cap[i] < 800:
-                    self.storage_cap[i] = 800
+        self.storage_cap = [warehouse_storage, warehouse_storage, warehouse_storage, granary_storage]
+        for i in range(len(self.storage_cap)):
+            if self.storage_cap[i] < 800:
+                self.storage_cap[i] = 800
 
     #fairly basic function to calculate yield, has some innefficiencies noted below
     #returns per second yields, which then get multiplied out by time elapsed
