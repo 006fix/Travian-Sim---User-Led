@@ -42,13 +42,10 @@ class Village(base_squares.Square):
                     storage = building_data.building_dict['granary'][level][4]
                     granary_storage += storage
             #extra section to stop it setting back to 0 if buildings destroyed
-            else:
-                no_storage_found = True
-        if no_storage_found:
-            self.storage_cap = [800,800,800,800]
-        else:
             self.storage_cap = [warehouse_storage, warehouse_storage, warehouse_storage, granary_storage]
-
+            for i in self.storage_cap:
+                if i < 800:
+                    i = 800
 
     #fairly basic function to calculate yield, has some innefficiencies noted below
     #returns per second yields, which then get multiplied out by time elapsed
@@ -99,7 +96,7 @@ class Village(base_squares.Square):
                     #default to assuming enough res, then make false if not true
                     enough_res = True
                     for i in range(4):
-                        if upgrade_cost[i] >= self.stored[i]:
+                        if upgrade_cost[i] > self.stored[i]:
                             enough_res = False
                     if enough_res:
                         #builings go in appropriate dict entry
@@ -116,13 +113,13 @@ class Village(base_squares.Square):
             if len(upgrade_cost) > 1:
                 enough_res = True
                 for i in range(4):
-                    if upgrade_cost[i] >= self.stored[i]:
+                    if upgrade_cost[i] > self.stored[i]:
                         enough_res = False
                 if enough_res:
                 #fields go in appropriate dict entry
-                final_value = [key]
-                dictval = possible_buildings['fields']
-                dictval.append(final_value)
-                possible_buildings['fields'] = dictval
+                    final_value = [key]
+                    dictval = possible_buildings['fields']
+                    dictval.append(final_value)
+                    possible_buildings['fields'] = dictval
         return possible_buildings   
 
