@@ -43,9 +43,9 @@ class Village(base_squares.Square):
                     granary_storage += storage
             #extra section to stop it setting back to 0 if buildings destroyed
             self.storage_cap = [warehouse_storage, warehouse_storage, warehouse_storage, granary_storage]
-            for i in self.storage_cap:
-                if i < 800:
-                    i = 800
+            for i in range(len(self.storage_cap)):
+                if self.storage_cap[i] < 800:
+                    self.storage_cap[i] = 800
 
     #fairly basic function to calculate yield, has some innefficiencies noted below
     #returns per second yields, which then get multiplied out by time elapsed
@@ -104,7 +104,6 @@ class Village(base_squares.Square):
                         final_value = [key, holdval[0]]
                         dictval = possible_buildings['buildings']
                         dictval.append(final_value)
-                        possible_buildings['buildings'] = dictval
         for key in self.fields:
             holdval = self.fields[key]
             holdval_level = holdval.level
@@ -116,10 +115,11 @@ class Village(base_squares.Square):
                     if upgrade_cost[i] > self.stored[i]:
                         enough_res = False
                 if enough_res:
-                #fields go in appropriate dict entry
+                # [ISS-005][ISS-006] legacy structure still relies on cost list sentinel
+                # and returns a differently shaped payload; refactor when tidying upgrade flow.
+                    #fields go in appropriate dict entry
                     final_value = [key]
                     dictval = possible_buildings['fields']
                     dictval.append(final_value)
-                    possible_buildings['fields'] = dictval
         return possible_buildings   
 
