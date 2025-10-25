@@ -123,5 +123,126 @@ class Village(base_squares.Square):
                     dictval.append(final_value)
         return possible_buildings   
     
-    #TODO - UPGRADE BUILDING, FIELD, BUILDING UPGRADED, FIELD UPGRADED, 
+    def upgrade_building(self, upgrade_target):
+        #built and designed for the 2 key building logic in possible_buildings
+        building_dict_key = upgrade_target[0]
+        building_data_key = upgrade_target[1]
+        relevant_target = self.buildings[building_dict_key]
+        current_level = relevant_target[1]
+        upgradeable_check = relevant_target[2]
+        #this is fine for now, and should never trigger. But it is crude.
+        #Issue - this is a case where we need better logging functionality.
+        if upgradeable_check != True:
+            raise ValueError ("You appear to have attempted to upgrade a building that cannot be upgraded :(")
+        upgrade_cost = b_data.building_dict[building_data_key][current_level][0]
+
+        #get upgrade time for the building
+        upgrade_time = b_data.building_dict[building_data_key][current_level][3]
+        #issue - this does not factor in main building time, needs to be built in in the future
+        true_upgrade_time = gen_func.sec_val(upgrade_time)
+
+        #subtract the cost of the ugprade from the village
+        hold_vals = self.stored
+        for i in range(len(hold_vals)):
+            hold_vals[i] -= upgrade_cost[i]
+        self.stored = hold_vals
+        
+        #removed a section on upgrading the level of items already here, and shifted it to
+        #post build completion in new function
+
+        sleep_duration = true_upgrade_time
+        return sleep_duration
+    
+    def upgrade_field(self, upgrade_target):
+
+        #find fields within self.fields, and get key, level, upgradeable
+        field_data = self.fields[upgrade_target]
+        field_dict_key = upgrade_target[:4]
+        current_level = field_data.level
+        upgradeable_check = field_data.upgradeable
+
+        #this is fine for now, as i'm happy for it to break
+        #however, this is a future issue and candidate for logging
+        if upgradeable_check != True:
+            print(f"you are upgrading {upgrade_target}")
+            raise ValueError("You appear to have attempted to upgrade a field that cannot be upgraded :(")
+
+        #get upgrade cost and upgrade time
+        upgrade_cost = f_data.field_dict[field_dict_key][current_level][0]
+        upgrade_time = f_data.field_dict[field_dict_key][current_level][3]
+        #issue - this will not work as planned currently, as it does not factor in
+        #the main building imapct on duration
+        true_upgrade_time = gen_func.sec_val(upgrade_time)
+
+        #remove cost of everything used for upgrades
+        hold_vals = self.stored
+        for i in range(len(hold_vals)):
+            hold_vals[i] -= upgrade_cost[i]
+        self.stored = hold_vals
+        self.currently_upgrading.append(upgrade_target)
+
+        sleep_duration = true_upgrade_time
+        return sleep_duration
+
+
+    def building_upgraded(self, upgrade_target):
+
+        #same start code as above
+        #built and designed for the 2 key building logic in possible_buildings
+        building_dict_key = upgrade_target[0]
+        building_data_key = upgrade_target[1]
+        relevant_target = self.buildings[building_dict_key]
+        current_level = relevant_target[1]
+        upgradeable_check = relevant_target[2]
+
+        #this is imperfect, but should work fine - you can't ugprade if its not upgradeable
+        #so not risk of overflow error
+        #however, this is still an extant issue, as it uses the false flag.
+        level_plusone = current_level + 1
+        still_upgradeable = b_data.building_dict[building_data_key][level_plusone][0]
+        if still_upgradeable[0] == False:
+            upgrade_possible = False
+        else:
+            upgrade_possible = True
+
+        #applying the new values derived above for the upgraded building
+        old_vals = self.buildings[building_dict_key]
+        old_vals[2] = upgrade_possible
+        old_vals[1] = level_plusone
+        #potentially not needed, superflous step
+        self.buildings[building_dict_key] = old_vals
+
+        #null list to signify nothing upgrading.
+        #ISSUE : THIS WILL NEED TO BE CHANGED TO BE A SIMPLE REMOVAL OF THE 0TH INDEX
+        #to allow for the roman race to be implemented
+        self.currently_upgrading = []
+
+        #nothing returned, merely modifies values in place
+    
+    def field_upgraded(self, upgrade_target):
+
+        field_data = self.fields[upgrade_target]
+        field_dict_key = upgrade_target[:4]
+
+        current_level = field_data.level
+
+        #used to check if the new building is upgradeable
+        #ISSUE : for fields in non capital, this will eventually need to cap at 10 in some way
+        level_plusone = current_level + 1
+        still_upgradeable = f_data.field_dict[field_dict_key][level_plusone][0]
+        if still_upgradeable[0] == False:
+            upgrade_possible = False
+        else:
+            upgrade_possible = True
+
+        # used to update the villages building list with the new level and upgradeability
+        field_data.level = level_plusone
+        field_data.upgradeable = upgrade_possible
+
+        #null list to signify nothing upgrading.
+        #ISSUE : THIS WILL NEED TO BE CHANGED TO BE A SIMPLE REMOVAL OF THE 0TH INDEX
+        #to allow for the roman race to be implemented
+        self.currently_upgrading = []
+
+        #nothing returned, merely modifies values in place
 
