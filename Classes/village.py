@@ -35,11 +35,11 @@ class Village(base_squares.Square):
             if len(holder) > 0:
                 if 'warehouse' in holder[0]:
                     level = holder[1]
-                    storage = building_data.building_dict['warehouse'][level][4]
+                    storage = b_data.building_dict['warehouse'][level][4]
                     warehouse_storage += storage
                 if 'granary' in holder[0]:
                     level = holder[1]
-                    storage = building_data.building_dict['granary'][level][4]
+                    storage = b_data.building_dict['granary'][level][4]
                     granary_storage += storage
             #extra section to stop it setting back to 0 if buildings destroyed
             self.storage_cap = [warehouse_storage, warehouse_storage, warehouse_storage, granary_storage]
