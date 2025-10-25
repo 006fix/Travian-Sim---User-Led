@@ -122,4 +122,6 @@ class Village(base_squares.Square):
                     dictval = possible_buildings['fields']
                     dictval.append(final_value)
         return possible_buildings   
+    
+    #TODO - UPGRADE BUILDING, FIELD, BUILDING UPGRADED, FIELD UPGRADED, 
 
