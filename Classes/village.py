@@ -138,7 +138,7 @@ class Village(base_squares.Square):
 
         #get upgrade time for the building
         upgrade_time = b_data.building_dict[building_data_key][current_level][3]
-        #issue - this does not factor in main building time, needs to be built in in the future
+        # [ISS-007] issue - this does not factor in main building time, needs to be built in in the future
         true_upgrade_time = gen_func.sec_val(upgrade_time)
 
         #subtract the cost of the ugprade from the village
@@ -213,7 +213,7 @@ class Village(base_squares.Square):
         self.buildings[building_dict_key] = old_vals
 
         #null list to signify nothing upgrading.
-        #ISSUE : THIS WILL NEED TO BE CHANGED TO BE A SIMPLE REMOVAL OF THE 0TH INDEX
+        # [ISS-008] ISSUE : THIS WILL NEED TO BE CHANGED TO BE A SIMPLE REMOVAL OF THE 0TH INDEX
         #to allow for the roman race to be implemented
         self.currently_upgrading = []
 
@@ -227,7 +227,7 @@ class Village(base_squares.Square):
         current_level = field_data.level
 
         #used to check if the new building is upgradeable
-        #ISSUE : for fields in non capital, this will eventually need to cap at 10 in some way
+        # ISSUE : for fields in non capital, this will eventually need to cap at 10 in some way
         level_plusone = current_level + 1
         still_upgradeable = f_data.field_dict[field_dict_key][level_plusone][0]
         if still_upgradeable[0] == False:
@@ -240,7 +240,7 @@ class Village(base_squares.Square):
         field_data.upgradeable = upgrade_possible
 
         #null list to signify nothing upgrading.
-        #ISSUE : THIS WILL NEED TO BE CHANGED TO BE A SIMPLE REMOVAL OF THE 0TH INDEX
+        # [ISS-008] ISSUE : THIS WILL NEED TO BE CHANGED TO BE A SIMPLE REMOVAL OF THE 0TH INDEX
         #to allow for the roman race to be implemented
         self.currently_upgrading = []
 
