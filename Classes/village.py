@@ -179,7 +179,7 @@ class Village(base_squares.Square):
         for i in range(len(hold_vals)):
             hold_vals[i] -= upgrade_cost[i]
         self.stored = hold_vals
-        self.currently_upgrading.append(upgrade_target)
+        self.currently_upgrading.append([upgrade_target])
 
         sleep_duration = true_upgrade_time
         return sleep_duration

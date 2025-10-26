@@ -21,7 +21,8 @@
 - **ISS-008** — `Classes/village.py`: Completion handlers (`building_upgraded`, `field_upgraded`) clear `currently_upgrading` wholesale. Replace with removal of just the finished job so Romans (or future multi-queue logic) can upgrade in parallel.
 - **ISS-009** — `Classes/village.py`: `building_upgraded` relies on the `[False]` sentinel in `b_data.building_dict` to detect terminal levels; add explicit guards or helper accessors so missing entries don’t raise unexpectedly.
 
-## 2025-10-26 10:10:47
+- **ISS-014** — `Classes/AI_Classes/generic_running_mechanism.py`: Handle `currently_upgrading` entries by inspecting the first queued job; rewired to accept both `[slot_id, building_key]` and `[field_id]`. (Resolved 2025-10-26.)
 
-- **ISS-011** — `Classes/AI_Classes/generic_running_mechanism.py`: `will_i_act` assumes `self.villages` contains `Village` objects, but the current player setup stores map keys; dereferencing `yield_calc` on a string will fail. Decide on a consistent representation.
-- **ISS-014** — `Classes/AI_Classes/generic_running_mechanism.py`: `currently_upgrading` handling treats the placeholder list as containing either two entries or a field key list; the current `Village` implementation stores only field strings, so completion will call `field_upgraded` with the wrong type. Normalise the data structure before processing.
+## 2025-10-26 12:05:00
+
+- **ISS-015** — `Classes/AI_Classes/generic_running_mechanism.py`: Completion logic drops the first queued job but still relies on nested lists and manual length checks. Replace with a structured job record to avoid brittle indexing when Romans/multi-queue support lands.

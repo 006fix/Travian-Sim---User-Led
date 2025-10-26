@@ -26,6 +26,8 @@ class base_controller(player.Player):
 			 
 			#variable used to determine if the player is taking an action
 			player_acting = False
+			#creating reset_time for use later
+			reset_time = False
 
 			#removed old legacy if sleep == False check
 			duration_slept = current_time - global_last_active
@@ -42,7 +44,6 @@ class base_controller(player.Player):
 				#thats suboptimal behaviour - low priority, but still an issue
 				wait_time_list = []
 				for curr_village in self.villages:
-					# [ISS-011] self.villages presently stores keys, not Village instances; this will break yield_calc().
 					#this used to use map data to find the village, it should now find it within the players
 					resources_gained = curr_village.yield_calc()
 					for i in range(len(resources_gained)):
@@ -62,13 +63,12 @@ class base_controller(player.Player):
 					#issue - this is incredibly messy as a result of needing to handle both villages and fields
 					#i hate it and it needs to change to be better, also for romans.
 					if len(curr_village.currently_upgrading) > 0:
-						if len(curr_village.currently_upgrading) == 2:
-							# [ISS-014] Village.currently_upgrading never stores a two-item list in new code; normalise structure.
-							upgraded_building = curr_village.currently_upgrading
-							curr_village.building_upgraded(upgraded_building)
+						job = curr_village.currently_upgrading[0]
+						# [ISS-015] still relying on nested lists; swap to structured job records when queue logic is rewritten.
+						if len(job) == 2:
+							curr_village.building_upgraded(job)
 						else:
-							upgraded_field = curr_village.currently_upgrading
-							curr_village.field_upgraded(upgraded_field)
+							curr_village.field_upgraded(job[0])
 
 					#now we get possible buildings
 					possible_actions = curr_village.possible_buildings()
