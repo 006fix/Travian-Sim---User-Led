@@ -30,7 +30,10 @@ def populate_players_with_villages(map_dict, num_players, rng_holder=None):
                 active_player.quadrant,
                 rng_holder,
             )
-            active_player.villages.append(village_key)
+            created_village = map_dict[village_key]
+            created_village.location = village_key
+            map_dict[village_key] = created_village
+            active_player.villages.append(created_village)
         except RuntimeError:
             failed_players.append(active_player.name)
     if len(failed_players) > 0:

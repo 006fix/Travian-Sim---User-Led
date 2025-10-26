@@ -8,8 +8,9 @@ class base_controller(player.Player):
 		def __init__(self, name, quadrant, race, ai_controller,
 				 population=0, attack_points=0, defence_points=0, raid_points=0, culture_points=0,
 				 villages=[], AI_type = 'generic'):
+
 			super().__init__(name, quadrant, race, ai_controller,
-					population=0, attack_points=0, defence_points=0, raid_points=0, culture_points=0, villages=[])
+					population=0, attack_points=0, defence_points=0, raid_points=0, culture_points=0)
 
 		def reset_next_action(self, upgrade_time):
 			  
@@ -41,11 +42,12 @@ class base_controller(player.Player):
 				#thats suboptimal behaviour - low priority, but still an issue
 				wait_time_list = []
 				for curr_village in self.villages:
+					# [ISS-011] self.villages presently stores keys, not Village instances; this will break yield_calc().
 					#this used to use map data to find the village, it should now find it within the players
 					resources_gained = curr_village.yield_calc()
 					for i in range(len(resources_gained)):
 						resources_gained[i] *= local_duration_slept
-					current_stockpile = self.stored
+					current_stockpile = curr_village.stored
 					current_max = curr_village.storage_cap
 					for i in range(len(resources_gained)):
 						if(resources_gained)[i] + current_stockpile[i] > current_max[i]:
@@ -61,6 +63,7 @@ class base_controller(player.Player):
 					#i hate it and it needs to change to be better, also for romans.
 					if len(curr_village.currently_upgrading) > 0:
 						if len(curr_village.currently_upgrading) == 2:
+							# [ISS-014] Village.currently_upgrading never stores a two-item list in new code; normalise structure.
 							upgraded_building = curr_village.currently_upgrading
 							curr_village.building_upgraded(upgraded_building)
 						else:
@@ -92,7 +95,7 @@ class base_controller(player.Player):
 							chosen_origin = origin_list[index]
 					else:
 						#all ai controllers will use a function called "derive next action, called here"
-						self.ai_controller.derive_next_action()
+						chosen_item, chosen_origin = self.ai_controller.derive_next_action()
 					
 
 
