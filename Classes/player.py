@@ -1,10 +1,11 @@
 
 class Player:
-    def __init__(self, name, quadrant, race,
+    def __init__(self, name, quadrant, race, ai_controller,
                  population=0, attack_points=0, defence_points=0, raid_points=0, culture_points=0):
         self.name = name
         self.quadrant = quadrant
         self.race = race
+        self.ai_controller = ai_controller
         self.culture_points = culture_points
         self.population = population
         self.attack_points = attack_points
