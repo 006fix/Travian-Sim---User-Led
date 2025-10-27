@@ -21,8 +21,14 @@
 - **ISS-008** — `Classes/village.py`: Completion handlers (`building_upgraded`, `field_upgraded`) clear `currently_upgrading` wholesale. Replace with removal of just the finished job so Romans (or future multi-queue logic) can upgrade in parallel.
 - **ISS-009** — `Classes/village.py`: `building_upgraded` relies on the `[False]` sentinel in `b_data.building_dict` to detect terminal levels; add explicit guards or helper accessors so missing entries don’t raise unexpectedly.
 
-- **ISS-014** — `Classes/AI_Classes/generic_running_mechanism.py`: Handle `currently_upgrading` entries by inspecting the first queued job; rewired to accept both `[slot_id, building_key]` and `[field_id]`. (Resolved 2025-10-26.)
-
 ## 2025-10-26 12:05:00
 
 - **ISS-015** — `Classes/AI_Classes/generic_running_mechanism.py`: Completion logic drops the first queued job but still relies on nested lists and manual length checks. Replace with a structured job record to avoid brittle indexing when Romans/multi-queue support lands.
+
+## 2025-10-27 08:27:52
+
+- **ISS-016** — `simulation_runner/game_state_progression.py`: `set_time_elapsed` writes a string sentinel into `time_will_elapse`; replace with a numeric default or queue-driven scheduler to avoid type churn.
+- **ISS-017** — `simulation_runner/game_state_progression.py`: `check_passive` relies on `next_update()` returning `True` to mean “no event”; clarify the contract and swap to `None`/numeric values so the scheduler stays well-typed.
+- **ISS-018** — `simulation_runner/game_state_progression.py`: Global state (`game_counter`, `time_will_elapse`, `global_last_active`) is mutated via module-level globals; encapsulate in a Kernel/GameState object and pass dependencies explicitly.
+- **ISS-019** — `simulation_runner/game_state_progression.py`: Fallback `min_elapsed = 1` advances time even when no actors are pending; replace with a heartbeat event or guard to detect stalled simulations instead of silently ticking.
+- **ISS-020** — `simulation_runner/game_state_progression.py`: No logging/metrics around tick decisions. Add structured logging once the kernel is formalised.
