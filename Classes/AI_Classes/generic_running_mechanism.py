@@ -65,10 +65,13 @@ class base_controller(player.Player):
             current_stockpile = curr_village.stored
             current_max = curr_village.storage_cap
             for i in range(len(resources_gained)):
-                if resources_gained[i] + current_stockpile[i] > current_max[i]:
+                updated_amount = current_stockpile[i] + resources_gained[i]
+                if updated_amount > current_max[i]:
                     current_stockpile[i] = current_max[i]
+                elif updated_amount < 0:
+                    current_stockpile[i] = 0
                 else:
-                    current_stockpile[i] = current_stockpile[i] + resources_gained[i]
+                    current_stockpile[i] = updated_amount
             curr_village.stored = current_stockpile
 
             if len(curr_village.currently_upgrading) > 0:

@@ -1,4 +1,4 @@
-# Issues Log
+﻿# Issues Log
 
 ## 2025-10-21 13:17:02
 
@@ -12,7 +12,7 @@
 
 ## 2025-10-25 09:44:10
 
-- **ISS-005** — `Classes/village.py`: `possible_buildings` still depends on `len(upgrade_cost) > 1` to detect the legacy `[False]` sentinel instead of using the field’s `upgradeable` flag. Swap to an explicit attribute check to decouple the helper from data-table quirks.
+- **ISS-005** (resolved 2025-10-28) - `Classes/village.py`: `possible_buildings` still depends on `len(upgrade_cost) > 1` to detect the legacy `[False]` sentinel instead of using the field's `upgradeable` flag. Swap to an explicit attribute check to decouple the helper from data-table quirks.
 - **ISS-006** — `Classes/village.py`: `possible_buildings` returns building entries as `[slot_id, name]` but field entries as `[field_id]`. Normalise the payload shape (for example, tagged dicts) so consumers don’t need special cases.
 
 ## 2025-10-25 14:24:49
@@ -37,3 +37,8 @@
 ## 2025-10-28 09:15:00
 
 - **ISS-022** - `simulation_runner/run_logger.py`: Logger emits per-event metrics but lacks aggregated per-player/per-village summaries; introduce a scoreboard view for quick post-run comparison.
+
+## 2025-10-28 19:33:04
+
+- **ISS-005** resolved - `Classes/village.py`: `possible_buildings` now checks the field's `upgradeable` flag instead of relying on the legacy cost sentinel.
+

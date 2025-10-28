@@ -60,28 +60,22 @@ class Village(base_squares.Square):
         clay_yield = 0
         iron_yield = 0
         crop_yield = 0
-        crop_usage = 0
-        for key3 in self.fields:
+        for key3, field_obj in self.fields.items():
             if 'Wood' in key3:
-                wood_yield += self.fields[key3].field_yield
-                crop_usage += self.fields[key3].pop
+                wood_yield += field_obj.field_yield
             if 'Clay' in key3:
-                clay_yield += self.fields[key3].field_yield
-                crop_usage += self.fields[key3].pop
+                clay_yield += field_obj.field_yield
             if 'Iron' in key3:
-                iron_yield += self.fields[key3].field_yield
-                crop_usage += self.fields[key3].pop
+                iron_yield += field_obj.field_yield
             if 'Crop' in key3:
-                crop_yield += self.fields[key3].field_yield
-                crop_usage += self.fields[key3].pop
-        
-        #the below is new - removal of the /3600 stage in the above loop does save us about 4 calls per
-        #function call, but its still inefficient.
-        #issue - this should really be added later, and just happen at base value level, but cba atm
-        wood_yield = wood_yield/3600
-        clay_yield = clay_yield/3600
-        iron_yield = iron_yield/3600
-        crop_yield = (crop_yield-crop_usage)/3600
+                crop_yield += field_obj.field_yield
+
+        wood_yield = wood_yield / 3600
+        clay_yield = clay_yield / 3600
+        iron_yield = iron_yield / 3600
+        #population is per person crop consumption per hour
+        net_crop = crop_yield - self.population
+        crop_yield = net_crop / 3600
 
         yields = [wood_yield, clay_yield, iron_yield, crop_yield]
         return yields
@@ -114,16 +108,14 @@ class Village(base_squares.Square):
             holdval = self.fields[key]
             holdval_level = holdval.level
             key2 = key[:4]
-            upgrade_cost = f_data.field_dict[key2][holdval_level][0]
-            if len(upgrade_cost) > 1:
+            if holdval.upgradeable is True:
+                upgrade_cost = f_data.field_dict[key2][holdval_level][0]
                 enough_res = True
                 for i in range(4):
                     if upgrade_cost[i] > self.stored[i]:
                         enough_res = False
                 if enough_res:
-                # [ISS-005][ISS-006] legacy structure still relies on cost list sentinel
-                # and returns a differently shaped payload; refactor when tidying upgrade flow.
-                    #fields go in appropriate dict entry
+                    # [ISS-006] different payload shape remains for now; revisit when tidying consumers.
                     final_value = [key]
                     dictval = possible_buildings['fields']
                     dictval.append(final_value)

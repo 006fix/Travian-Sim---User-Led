@@ -367,6 +367,55 @@ def test_logger_records_village_metrics() -> Tuple[bool, str]:
     return True, "Logger captures population, culture, and yield metrics on events."
 
 
+def test_crop_yield_uses_population_consumption() -> Tuple[bool, str]:
+    """Confirm crop output subtracts population usage once."""
+    world = _build_world(40, seed=512)
+    rng_holder = random.Random(77)
+    players = populate_players_with_villages(world, 1, rng_holder=rng_holder)
+    controller = next(iter(players.values()))
+    village_obj = controller.villages[0]
+
+    crop_per_hour = sum(
+        field.field_yield for field_name, field in village_obj.fields.items() if "Crop" in field_name
+    )
+    expected_crop_per_second = (crop_per_hour - village_obj.population) / 3600
+    wood, clay, iron, crop = village_obj.yield_calc()
+    if abs(crop - expected_crop_per_second) > 1e-6:
+        return False, f"Expected crop/sec {expected_crop_per_second}, got {crop}"
+    if any(val < 0 for val in (wood, clay, iron)):
+        return False, "Non-crop resource yields should not be negative."
+    return True, "Crop yield subtracts population usage exactly once."
+
+
+def test_crop_storage_clamped_at_zero() -> Tuple[bool, str]:
+    """Ensure storage never dips below zero even if crop income is negative."""
+    world = _build_world(40, seed=612)
+    rng_holder = random.Random(19)
+    players = populate_players_with_villages(world, 1, rng_holder=rng_holder)
+    controller = next(iter(players.values()))
+    village_obj = controller.villages[0]
+
+    class IdleAI:
+        def derive_next_action(self):
+            return (None, None)
+
+    controller.ai_controller = IdleAI()
+    controller.next_action_due_at = 100
+    controller.Last_Active = 0
+    village_obj.stored = [0, 0, 0, 0]
+    for field_name, field in village_obj.fields.items():
+        if "Crop" in field_name:
+            field.field_yield = 0
+    # ensure population still positive so crop becomes negative
+    if village_obj.population == 0:
+        village_obj.population = 2
+
+    controller.will_i_act(current_time=100, global_last_active=0)
+    if village_obj.stored[3] < 0:
+        return False, f"Crop storage dropped below zero: {village_obj.stored[3]}"
+    return True, "Negative crop flow is clamped at zero storage."
+
+
 TESTS = [
     ("Map determinism with seeded RNG", test_map_determinism),
     ("Map dimensions respect radius", test_map_dimensions),
@@ -381,6 +430,8 @@ TESTS = [
     ("culture points accumulate", test_culture_points_accumulate),
     ("game_state_progression tick advances", test_game_state_progression_tick_advances),
     ("run_logger captures village metrics", test_logger_records_village_metrics),
+    ("crop yield subtracts population usage", test_crop_yield_uses_population_consumption),
+    ("crop storage never negative", test_crop_storage_clamped_at_zero),
 ]
 
 
