@@ -1,4 +1,5 @@
 import Classes.player as player
+from Classes.AI_Classes.generic_running_mechanism import base_controller
 import Specific_Functions.village_creation as village_creation
 import random
 
@@ -19,7 +20,7 @@ def populate_players_with_villages(map_dict, num_players, rng_holder=None):
     player_dict = populate_players(num_players)
     quadrant_options = [("+", "+"), ("+", "-"), ("-", "+"), ("-", "-")]
     failed_players = []
-    for key in player_dict:
+    for key in list(player_dict.keys()):
         active_player = player_dict[key]
         if active_player.quadrant is None:
             active_player.quadrant = rng_holder.choice(quadrant_options)
@@ -34,6 +35,20 @@ def populate_players_with_villages(map_dict, num_players, rng_holder=None):
             created_village.location = village_key
             map_dict[village_key] = created_village
             active_player.villages.append(created_village)
+
+            controller_player = base_controller(
+                active_player.name,
+                active_player.quadrant,
+                active_player.race,
+                active_player.ai_controller,
+                population=active_player.population,
+                attack_points=active_player.attack_points,
+                defence_points=active_player.defence_points,
+                raid_points=active_player.raid_points,
+                culture_points=active_player.culture_points,
+            )
+            controller_player.villages = active_player.villages
+            player_dict[key] = controller_player
         except RuntimeError:
             failed_players.append(active_player.name)
     if len(failed_players) > 0:
