@@ -83,7 +83,7 @@ class Village(base_squares.Square):
     
     def possible_buildings(self):
         #modified to dictionary variant to store both in one item
-        possible_buildings = {'buildings' : [], 'fields' : []}
+        possible_buildings = {'buildings': [], 'fields': []}
         for key in self.buildings:
             holdval = self.buildings[key]
             #if buildings exist that can be built
@@ -99,9 +99,12 @@ class Village(base_squares.Square):
                         if upgrade_cost[i] > self.stored[i]:
                             enough_res = False
                     if enough_res:
-                        #builings go in appropriate dict entry
-                        #passed as a two part list, to provide the key and the name
-                        final_value = [key, holdval[0]]
+                        final_value = {
+                            'type': 'building',
+                            'slot': key,
+                            'name': holdval[0],
+                            'level': holdval_level,
+                        }
                         dictval = possible_buildings['buildings']
                         dictval.append(final_value)
         for key in self.fields:
@@ -115,8 +118,12 @@ class Village(base_squares.Square):
                     if upgrade_cost[i] > self.stored[i]:
                         enough_res = False
                 if enough_res:
-                    # [ISS-006] different payload shape remains for now; revisit when tidying consumers.
-                    final_value = [key]
+                    final_value = {
+                        'type': 'field',
+                        'field_id': key,
+                        'resource': key2,
+                        'level': holdval_level,
+                    }
                     dictval = possible_buildings['fields']
                     dictval.append(final_value)
         return possible_buildings   
@@ -136,8 +143,9 @@ class Village(base_squares.Square):
 
         #get upgrade time for the building
         upgrade_time = b_data.building_dict[building_data_key][current_level][3]
-        # [ISS-007] issue - this does not factor in main building time, needs to be built in in the future
+        speed_modifier = self._main_building_speed_modifier()
         true_upgrade_time = gen_func.sec_val(upgrade_time)
+        true_upgrade_time = max(1, int(round(true_upgrade_time * speed_modifier)))
 
         #subtract the cost of the ugprade from the village
         hold_vals = self.stored
@@ -168,9 +176,9 @@ class Village(base_squares.Square):
         #get upgrade cost and upgrade time
         upgrade_cost = f_data.field_dict[field_dict_key][current_level][0]
         upgrade_time = f_data.field_dict[field_dict_key][current_level][3]
-        #issue - this will not work as planned currently, as it does not factor in
-        #the main building imapct on duration
+        speed_modifier = self._main_building_speed_modifier()
         true_upgrade_time = gen_func.sec_val(upgrade_time)
+        true_upgrade_time = max(1, int(round(true_upgrade_time * speed_modifier)))
 
         #remove cost of everything used for upgrades
         hold_vals = self.stored
@@ -279,3 +287,16 @@ class Village(base_squares.Square):
         self.population = total_pop
         self.culture_points_rate = float(total_cp_rate)
         self.total_yield = float(total_field_yield - total_pop)
+
+    def _main_building_speed_modifier(self):
+        """Return the current main building speed modifier."""
+        main_building = self.buildings.get(0)
+        if main_building and len(main_building) > 1:
+            current_level = main_building[1]
+            try:
+                modifier = b_data.building_dict['main_building'][current_level][4]
+                if isinstance(modifier, (int, float)):
+                    return modifier
+            except KeyError:
+                pass
+        return 5

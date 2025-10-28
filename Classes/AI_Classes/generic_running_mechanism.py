@@ -89,6 +89,8 @@ class base_controller(player.Player):
                         culture_rate=curr_village.culture_points_rate,
                         culture_total=curr_village.culture_points_total,
                         total_yield=curr_village.total_yield,
+                        resources=curr_village.stored.copy(),
+                        storage_cap=curr_village.storage_cap.copy(),
                     )
                 else:
                     curr_village.field_upgraded(job[0])
@@ -101,28 +103,23 @@ class base_controller(player.Player):
                         culture_rate=curr_village.culture_points_rate,
                         culture_total=curr_village.culture_points_total,
                         total_yield=curr_village.total_yield,
+                        resources=curr_village.stored.copy(),
+                        storage_cap=curr_village.storage_cap.copy(),
                     )
 
             possible_actions = curr_village.possible_buildings()
 
             if self.ai_controller is None:
-                merged_list = []
-                origin_list = []
-                for key in possible_actions:
-                    hold_list = possible_actions[key]
-                    for item in hold_list:
-                        merged_list.append(item)
-                        origin_list.append(key)
-
-                if len(merged_list) == 0:
-                    chosen_item = None
-                    chosen_origin = None
-                else:
+                merged_list = [
+                    item for subset in possible_actions.values() for item in subset
+                ]
+                if merged_list:
                     index = self.rng_holder.randint(0, len(merged_list) - 1)
                     chosen_item = merged_list[index]
-                    chosen_origin = origin_list[index]
+                else:
+                    chosen_item = None
             else:
-                chosen_item, chosen_origin = self.ai_controller.derive_next_action()
+                chosen_item = self.ai_controller.derive_next_action()
 
             if len(curr_village.currently_upgrading) != 0:
                 run_logger.log_action(
@@ -154,19 +151,26 @@ class base_controller(player.Player):
                     )
                 else:
                     reset_time = True
-                    if chosen_origin == "buildings":
-                        wait_time = curr_village.upgrade_building(chosen_item)
-                        target_repr = str(chosen_item)
-                    elif chosen_origin == "fields":
-                        wait_time = curr_village.upgrade_field(chosen_item[0])
-                        target_repr = chosen_item[0]
+                    item_type = chosen_item.get("type")
+                    if item_type == "building":
+                        wait_time = curr_village.upgrade_building(
+                            [chosen_item["slot"], chosen_item["name"]]
+                        )
+                        target_repr = chosen_item["name"]
+                        action_label = "upgrade_building"
+                    elif item_type == "field":
+                        field_id = chosen_item["field_id"]
+                        wait_time = curr_village.upgrade_field(field_id)
+                        target_repr = field_id
+                        action_label = "upgrade_field"
                     else:
                         wait_time = None
                         target_repr = None
+                        action_label = "unknown"
                     run_logger.log_action(
                         player=self.name,
                         village_location=getattr(curr_village, "location", None),
-                        action_type=f"upgrade_{chosen_origin.rstrip('s')}" if chosen_origin else "unknown",
+                        action_type=action_label,
                         target=target_repr,
                         wait_time=wait_time,
                         population=curr_village.population,

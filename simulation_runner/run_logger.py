@@ -97,6 +97,8 @@ def log_completion(
     culture_rate: Optional[float] = None,
     culture_total: Optional[float] = None,
     total_yield: Optional[float] = None,
+    resources: Optional[List[float]] = None,
+    storage_cap: Optional[List[float]] = None,
 ) -> None:
     """Record completion of a queued job."""
     payload: Dict[str, Any] = {
@@ -113,10 +115,12 @@ def log_completion(
         payload["culture_total"] = culture_total
     if total_yield is not None:
         payload["total_yield"] = total_yield
+    if resources is not None:
+        payload["resources"] = list(resources)
+    if storage_cap is not None:
+        payload["storage_cap"] = list(storage_cap)
     log_event("completion", payload)
 
-
-# [ISS-021] Resource snapshots are deferred until completion events are explicit.
 
 
 def finalise_run(summary: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:

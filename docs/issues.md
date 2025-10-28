@@ -13,11 +13,11 @@
 ## 2025-10-25 09:44:10
 
 - **ISS-005** (resolved 2025-10-28) - `Classes/village.py`: `possible_buildings` still depends on `len(upgrade_cost) > 1` to detect the legacy `[False]` sentinel instead of using the field's `upgradeable` flag. Swap to an explicit attribute check to decouple the helper from data-table quirks.
-- **ISS-006** — `Classes/village.py`: `possible_buildings` returns building entries as `[slot_id, name]` but field entries as `[field_id]`. Normalise the payload shape (for example, tagged dicts) so consumers don’t need special cases.
+- **ISS-006** (resolved 2025-10-28) - `Classes/village.py`: `possible_buildings` returns building entries as `[slot_id, name]` but field entries as `[field_id]`. Normalise the payload shape (for example, tagged dicts) so consumers don't need special cases.
 
 ## 2025-10-25 14:24:49
 
-- **ISS-007** — `Classes/village.py`: `upgrade_building` and `upgrade_field` still ignore main-building speed modifiers when converting build times; the duration helper needs to incorporate the main-building level to match Travian timing.
+- **ISS-007** (resolved 2025-10-28) - `Classes/village.py`: `upgrade_building` and `upgrade_field` still ignore main-building speed modifiers when converting build times; the duration helper needs to incorporate the main-building level to match Travian timing.
 - **ISS-008** — `Classes/village.py`: Completion handlers (`building_upgraded`, `field_upgraded`) clear `currently_upgrading` wholesale. Replace with removal of just the finished job so Romans (or future multi-queue logic) can upgrade in parallel.
 - **ISS-009** — `Classes/village.py`: `building_upgraded` relies on the `[False]` sentinel in `b_data.building_dict` to detect terminal levels; add explicit guards or helper accessors so missing entries don’t raise unexpectedly.
 
@@ -32,7 +32,7 @@
 - **ISS-018** — `simulation_runner/game_state_progression.py`: Global state (`game_counter`, `time_will_elapse`, `global_last_active`) is mutated via module-level globals; encapsulate in a Kernel/GameState object and pass dependencies explicitly.
 - **ISS-019** — `simulation_runner/game_state_progression.py`: Fallback `min_elapsed = 1` advances time even when no actors are pending; replace with a heartbeat event or guard to detect stalled simulations instead of silently ticking.
 - **ISS-020** — `simulation_runner/game_state_progression.py`: No logging/metrics around tick decisions. Add structured logging once the kernel is formalised.
-- **ISS-021** — `simulation_runner/run_logger.py`: Resource snapshot logging is blocked by the current “wake implies completion” assumption; revisit once upgrade completion events are explicit.
+- **ISS-021** (resolved 2025-10-28) - `simulation_runner/run_logger.py`: Resource snapshot logging is blocked by the current "wake implies completion" assumption; revisit once upgrade completion events are explicit.
 
 ## 2025-10-28 09:15:00
 
@@ -41,4 +41,19 @@
 ## 2025-10-28 19:33:04
 
 - **ISS-005** resolved - `Classes/village.py`: `possible_buildings` now checks the field's `upgradeable` flag instead of relying on the legacy cost sentinel.
+
+
+## 2025-10-28 22:10:17
+
+- **ISS-007** resolved - Classes/village.py: Upgrade durations now scale with the main building speed modifier (fallback multiplier 5 when unavailable).
+
+
+## 2025-10-28 22:21:01
+
+- **ISS-006** resolved - Classes/village.py: possible_buildings now emits unified dict payloads and controller logic consumes them consistently.
+
+
+## 2025-10-28 23:25:05
+
+- **ISS-021** resolved - simulation_runner/run_logger.py: Completion events now capture stored resources and storage caps alongside population and culture metrics.
 

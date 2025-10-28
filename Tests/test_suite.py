@@ -20,6 +20,7 @@ from Classes.village import Village
 from Classes.AI_Classes.generic_running_mechanism import base_controller
 from Generic_Functions.generic_functions import sec_val
 from Base_Data import Fields_Data as f_data
+from Base_Data import Building_Data as b_data
 from simulation_runner import game_state_progression as progress_state
 from simulation_runner import run_logger
 
@@ -220,17 +221,24 @@ def test_base_controller_triggers_field_upgrade() -> Tuple[bool, str]:
     village_obj = controller.villages[0]
     field_id = next(iter(village_obj.fields.keys()))
 
+    field_prefix = field_id[:4]
+    current_level = village_obj.fields[field_id].level
+
     class StubAI:
         def __init__(self, action):
             self.action = action
         def derive_next_action(self):
             return self.action
 
-    controller.ai_controller = StubAI(([field_id], "fields"))
+    stub_action = {
+        "type": "field",
+        "field_id": field_id,
+        "resource": field_prefix,
+        "level": current_level,
+    }
+    controller.ai_controller = StubAI(stub_action)
     controller.next_action_due_at = 10
     initial_stock = village_obj.stored.copy()
-    field_prefix = field_id[:4]
-    current_level = village_obj.fields[field_id].level
     upgrade_cost = f_data.field_dict[field_prefix][current_level][0]
     expected_wait = sec_val(f_data.field_dict[field_prefix][current_level][3])
     pop_before = village_obj.population
@@ -273,7 +281,7 @@ def test_culture_points_accumulate() -> Tuple[bool, str]:
 
     class IdleAI:
         def derive_next_action(self):
-            return (None, None)
+            return None
 
     controller.ai_controller = IdleAI()
     controller.next_action_due_at = 100
@@ -352,6 +360,8 @@ def test_logger_records_village_metrics() -> Tuple[bool, str]:
         culture_rate=4.0,
         culture_total=14.0,
         total_yield=28.0,
+        resources=[5, 6, 7, 8],
+        storage_cap=[800, 800, 800, 800],
     )
     events = run_logger.get_events()
     if len(events) != 2:
@@ -360,9 +370,18 @@ def test_logger_records_village_metrics() -> Tuple[bool, str]:
     for key in ["population", "culture_rate", "culture_total", "total_yield"]:
         if key not in action_event or key not in completion_event:
             return False, f"Logger missing '{key}' in events."
+    for key in ["resources", "storage_cap"]:
+        if key not in completion_event:
+            return False, f"Completion missing '{key}' snapshot."
     if completion_event["population"] != 11 or abs(completion_event["total_yield"] - 28.0) > 1e-6:
         run_logger.reset()
         return False, "Completion payload did not record the supplied metrics."
+    if completion_event["resources"] != [5, 6, 7, 8]:
+        run_logger.reset()
+        return False, "Resource snapshot mismatch on completion."
+    if completion_event["storage_cap"] != [800, 800, 800, 800]:
+        run_logger.reset()
+        return False, "Storage cap snapshot mismatch on completion."
     run_logger.reset()
     return True, "Logger captures population, culture, and yield metrics on events."
 
@@ -397,7 +416,7 @@ def test_crop_storage_clamped_at_zero() -> Tuple[bool, str]:
 
     class IdleAI:
         def derive_next_action(self):
-            return (None, None)
+            return None
 
     controller.ai_controller = IdleAI()
     controller.next_action_due_at = 100
@@ -416,6 +435,31 @@ def test_crop_storage_clamped_at_zero() -> Tuple[bool, str]:
     return True, "Negative crop flow is clamped at zero storage."
 
 
+def test_main_building_speed_modifier_applies() -> Tuple[bool, str]:
+    """Verify upgrade durations scale with the main building speed modifier."""
+    world = _build_world(40, seed=712)
+    rng_holder = random.Random(91)
+    players = populate_players_with_villages(world, 1, rng_holder=rng_holder)
+    controller = next(iter(players.values()))
+    village_obj = controller.villages[0]
+
+    field_id = next(iter(village_obj.fields.keys()))
+    prefix = field_id[:4]
+    current_level = village_obj.fields[field_id].level
+    base_seconds = sec_val(f_data.field_dict[prefix][current_level][3])
+
+    # bump the main building level to 4 to get a clear multiplier (0.9)
+    village_obj.buildings[0][1] = 4
+    village_obj.buildings[0][2] = True
+
+    expected_modifier = b_data.building_dict['main_building'][4][4]
+    wait_time = village_obj.upgrade_field(field_id)
+    expected_time = max(1, int(round(base_seconds * expected_modifier)))
+    if wait_time != expected_time:
+        return False, f"Expected wait {expected_time}, got {wait_time}"
+    return True, "Upgrade durations respect the main building speed modifier."
+
+
 TESTS = [
     ("Map determinism with seeded RNG", test_map_determinism),
     ("Map dimensions respect radius", test_map_dimensions),
@@ -432,6 +476,7 @@ TESTS = [
     ("run_logger captures village metrics", test_logger_records_village_metrics),
     ("crop yield subtracts population usage", test_crop_yield_uses_population_consumption),
     ("crop storage never negative", test_crop_storage_clamped_at_zero),
+    ("main building speed modifier applies", test_main_building_speed_modifier_applies),
 ]
 
 
