@@ -33,3 +33,7 @@
 - **ISS-019** — `simulation_runner/game_state_progression.py`: Fallback `min_elapsed = 1` advances time even when no actors are pending; replace with a heartbeat event or guard to detect stalled simulations instead of silently ticking.
 - **ISS-020** — `simulation_runner/game_state_progression.py`: No logging/metrics around tick decisions. Add structured logging once the kernel is formalised.
 - **ISS-021** — `simulation_runner/run_logger.py`: Resource snapshot logging is blocked by the current “wake implies completion” assumption; revisit once upgrade completion events are explicit.
+
+## 2025-10-28 09:15:00
+
+- **ISS-022** - `simulation_runner/run_logger.py`: Logger emits per-event metrics but lacks aggregated per-player/per-village summaries; introduce a scoreboard view for quick post-run comparison.

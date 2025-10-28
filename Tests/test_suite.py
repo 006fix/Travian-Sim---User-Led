@@ -21,6 +21,7 @@ from Classes.AI_Classes.generic_running_mechanism import base_controller
 from Generic_Functions.generic_functions import sec_val
 from Base_Data import Fields_Data as f_data
 from simulation_runner import game_state_progression as progress_state
+from simulation_runner import run_logger
 
 
 def _summarise_map(world: Dict[str, object]) -> List[Dict[str, object]]:
@@ -232,6 +233,9 @@ def test_base_controller_triggers_field_upgrade() -> Tuple[bool, str]:
     current_level = village_obj.fields[field_id].level
     upgrade_cost = f_data.field_dict[field_prefix][current_level][0]
     expected_wait = sec_val(f_data.field_dict[field_prefix][current_level][3])
+    pop_before = village_obj.population
+    yield_before = village_obj.total_yield
+    cp_rate_before = village_obj.culture_points_rate
 
     wait_time = controller.will_i_act(current_time=10, global_last_active=0)
     if wait_time != expected_wait or controller.next_action_due_at != 10 + expected_wait:
@@ -241,7 +245,49 @@ def test_base_controller_triggers_field_upgrade() -> Tuple[bool, str]:
     for idx in range(4):
         if village_obj.stored[idx] != initial_stock[idx] - upgrade_cost[idx]:
             return False, "Upgrade cost was not deducted correctly."
+
+    village_obj.field_upgraded(field_id)
+    new_level = current_level + 1
+    expected_pop_delta = f_data.field_dict[field_prefix][new_level][2] - f_data.field_dict[field_prefix][current_level][2]
+    expected_cp_delta = f_data.field_dict[field_prefix][new_level][1] - f_data.field_dict[field_prefix][current_level][1]
+    if village_obj.population != pop_before + expected_pop_delta:
+        return False, "Population did not increase as expected."
+    if abs(village_obj.culture_points_rate - (cp_rate_before + expected_cp_delta)) > 1e-6:
+        return False, "Culture point rate did not update correctly."
+    expected_yield_delta = f_data.field_dict[field_prefix][new_level][4] - f_data.field_dict[field_prefix][current_level][4]
+    expected_total_yield = yield_before + expected_yield_delta - expected_pop_delta
+    if abs(village_obj.total_yield - expected_total_yield) > 1e-6:
+        return False, "Total yield did not update to match the new field level."
+    if village_obj.currently_upgrading != []:
+        return False, "Upgrade queue was not cleared after completion."
     return True, "Controller triggers field upgrade and schedules next wake correctly."
+
+
+def test_culture_points_accumulate() -> Tuple[bool, str]:
+    """Ensure culture points accumulate based on rate and elapsed time."""
+    world = _build_world(40, seed=410)
+    rng_holder = random.Random(45)
+    players = populate_players_with_villages(world, 1, rng_holder=rng_holder)
+    controller = next(iter(players.values()))
+    village_obj = controller.villages[0]
+
+    class IdleAI:
+        def derive_next_action(self):
+            return (None, None)
+
+    controller.ai_controller = IdleAI()
+    controller.next_action_due_at = 100
+    village_obj.culture_points_rate = 12.0
+    village_obj.culture_points_total = 0.0
+    village_obj.stored = [0, 0, 0, 0]
+
+    remaining = controller.will_i_act(current_time=100, global_last_active=0)
+    expected_total = village_obj.culture_points_rate * (100 / 3600)
+    if abs(village_obj.culture_points_total - expected_total) > 1e-6:
+        return False, "Culture points did not accumulate as expected."
+    if remaining != controller.next_action_due_at - 100:
+        return False, "Controller did not schedule the fallback delay correctly."
+    return True, "Culture points accumulate according to rate and elapsed time."
 
 
 def test_game_state_progression_tick_advances() -> Tuple[bool, str]:
@@ -282,6 +328,45 @@ def test_game_state_progression_tick_advances() -> Tuple[bool, str]:
     return True, "Game state progression advances using the minimum scheduled delay."
 
 
+def test_logger_records_village_metrics() -> Tuple[bool, str]:
+    """Ensure logger attaches population, culture, and yield metrics to events."""
+    run_logger.reset()
+    run_logger.log_action(
+        player="Tester",
+        village_location="(0,0)",
+        action_type="idle",
+        target=None,
+        wait_time=None,
+        reason="no upgrades",
+        population=10,
+        culture_rate=3.5,
+        culture_total=12.0,
+        total_yield=25.0,
+    )
+    run_logger.log_completion(
+        player="Tester",
+        village_location="(0,0)",
+        job_type="field",
+        target="Wood1",
+        population=11,
+        culture_rate=4.0,
+        culture_total=14.0,
+        total_yield=28.0,
+    )
+    events = run_logger.get_events()
+    if len(events) != 2:
+        return False, f"Expected 2 events, found {len(events)}"
+    action_event, completion_event = events
+    for key in ["population", "culture_rate", "culture_total", "total_yield"]:
+        if key not in action_event or key not in completion_event:
+            return False, f"Logger missing '{key}' in events."
+    if completion_event["population"] != 11 or abs(completion_event["total_yield"] - 28.0) > 1e-6:
+        run_logger.reset()
+        return False, "Completion payload did not record the supplied metrics."
+    run_logger.reset()
+    return True, "Logger captures population, culture, and yield metrics on events."
+
+
 TESTS = [
     ("Map determinism with seeded RNG", test_map_determinism),
     ("Map dimensions respect radius", test_map_dimensions),
@@ -293,7 +378,9 @@ TESTS = [
     ("populate_players_with_villages returns controllers", test_populate_players_with_villages_returns_controllers),
     ("base_controller countdown without action", test_base_controller_countdown_no_action),
     ("base_controller triggers field upgrade", test_base_controller_triggers_field_upgrade),
+    ("culture points accumulate", test_culture_points_accumulate),
     ("game_state_progression tick advances", test_game_state_progression_tick_advances),
+    ("run_logger captures village metrics", test_logger_records_village_metrics),
 ]
 
 

@@ -49,6 +49,7 @@ def populate_players_with_villages(map_dict, num_players, rng_holder=None):
                 defence_points=active_player.defence_points,
                 raid_points=active_player.raid_points,
                 culture_points=active_player.culture_points,
+                villages=active_player.villages,
                 rng_holder=local_rng,
             )
             controller_player.villages = active_player.villages

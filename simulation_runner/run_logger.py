@@ -61,6 +61,10 @@ def log_action(
     target: Optional[str],
     wait_time: Optional[int],
     reason: Optional[str] = None,
+    population: Optional[int] = None,
+    culture_rate: Optional[float] = None,
+    culture_total: Optional[float] = None,
+    total_yield: Optional[float] = None,
 ) -> None:
     """Record the action (or inaction) chosen by a controller."""
     payload: Dict[str, Any] = {
@@ -72,6 +76,14 @@ def log_action(
     }
     if reason is not None:
         payload["reason"] = reason
+    if population is not None:
+        payload["population"] = population
+    if culture_rate is not None:
+        payload["culture_rate"] = culture_rate
+    if culture_total is not None:
+        payload["culture_total"] = culture_total
+    if total_yield is not None:
+        payload["total_yield"] = total_yield
     log_event("action", payload)
 
 
@@ -81,17 +93,27 @@ def log_completion(
     village_location: Optional[str],
     job_type: str,
     target: str,
+    population: Optional[int] = None,
+    culture_rate: Optional[float] = None,
+    culture_total: Optional[float] = None,
+    total_yield: Optional[float] = None,
 ) -> None:
     """Record completion of a queued job."""
-    log_event(
-        "completion",
-        {
-            "player": player,
-            "village": village_location,
-            "job_type": job_type,
-            "target": target,
-        },
-    )
+    payload: Dict[str, Any] = {
+        "player": player,
+        "village": village_location,
+        "job_type": job_type,
+        "target": target,
+    }
+    if population is not None:
+        payload["population"] = population
+    if culture_rate is not None:
+        payload["culture_rate"] = culture_rate
+    if culture_total is not None:
+        payload["culture_total"] = culture_total
+    if total_yield is not None:
+        payload["total_yield"] = total_yield
+    log_event("completion", payload)
 
 
 # [ISS-021] Resource snapshots are deferred until completion events are explicit.
@@ -99,6 +121,7 @@ def log_completion(
 
 def finalise_run(summary: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Close out the run and return the collected log."""
+    # [ISS-022] scoreboard aggregation should summarise per-player/village metrics for quick reference.
     if summary is not None:
         log_event("run_summary", summary)
     payload = {"metadata": RUN_METADATA.copy(), "events": list(RUN_EVENTS)}

@@ -58,6 +58,7 @@ class base_controller(player.Player):
         reset_time = False
 
         for curr_village in self.villages:
+            curr_village.culture_points_total += curr_village.culture_points_rate * (local_duration_slept / 3600)
             resources_gained = curr_village.yield_calc()
             for i in range(len(resources_gained)):
                 resources_gained[i] *= local_duration_slept
@@ -75,21 +76,29 @@ class base_controller(player.Player):
                 location = getattr(curr_village, "location", None)
                 # [ISS-015] still relying on nested lists; swap to structured job records when queue logic is rewritten.
                 if len(job) == 2:
+                    curr_village.building_upgraded(job)
                     run_logger.log_completion(
                         player=self.name,
                         village_location=location,
                         job_type="building",
                         target=str(job),
+                        population=curr_village.population,
+                        culture_rate=curr_village.culture_points_rate,
+                        culture_total=curr_village.culture_points_total,
+                        total_yield=curr_village.total_yield,
                     )
-                    curr_village.building_upgraded(job)
                 else:
+                    curr_village.field_upgraded(job[0])
                     run_logger.log_completion(
                         player=self.name,
                         village_location=location,
                         job_type="field",
                         target=job[0],
+                        population=curr_village.population,
+                        culture_rate=curr_village.culture_points_rate,
+                        culture_total=curr_village.culture_points_total,
+                        total_yield=curr_village.total_yield,
                     )
-                    curr_village.field_upgraded(job[0])
 
             possible_actions = curr_village.possible_buildings()
 
@@ -120,6 +129,10 @@ class base_controller(player.Player):
                     target=None,
                     wait_time=None,
                     reason="queue already busy",
+                    population=curr_village.population,
+                    culture_rate=curr_village.culture_points_rate,
+                    culture_total=curr_village.culture_points_total,
+                    total_yield=curr_village.total_yield,
                 )
                 raise ValueError("I have tried to initiate an upgrade, but I'm already upgrading something - why?")
             else:
@@ -131,6 +144,10 @@ class base_controller(player.Player):
                         target=None,
                         wait_time=None,
                         reason="no available upgrades",
+                        population=curr_village.population,
+                        culture_rate=curr_village.culture_points_rate,
+                        culture_total=curr_village.culture_points_total,
+                        total_yield=curr_village.total_yield,
                     )
                 else:
                     reset_time = True
@@ -149,6 +166,10 @@ class base_controller(player.Player):
                         action_type=f"upgrade_{chosen_origin.rstrip('s')}" if chosen_origin else "unknown",
                         target=target_repr,
                         wait_time=wait_time,
+                        population=curr_village.population,
+                        culture_rate=curr_village.culture_points_rate,
+                        culture_total=curr_village.culture_points_total,
+                        total_yield=curr_village.total_yield,
                     )
                     if wait_time is not None:
                         wait_time_list.append(wait_time)

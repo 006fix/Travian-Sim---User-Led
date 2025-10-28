@@ -25,6 +25,11 @@ class Village(base_squares.Square):
         self.storage_cap = [800, 800, 800, 800]
         self.stored = [800,800,800,800]
         self.currently_upgrading = []
+        self.population = 0
+        self.culture_points_rate = 0.0
+        self.culture_points_total = 0.0
+        self.total_yield = 0.0
+        self._recalculate_population_and_culture()
 
     #function to calculate storage, ignoring existence of the premade 800 setup for empty vils
     def calculate_storage(self):
@@ -212,6 +217,13 @@ class Village(base_squares.Square):
         old_vals[1] = level_plusone
         #potentially not needed, superflous step
         self.buildings[building_dict_key] = old_vals
+        old_entry = b_data.building_dict[building_data_key][current_level]
+        new_entry = b_data.building_dict[building_data_key][level_plusone]
+        pop_delta = new_entry[2] - old_entry[2]
+        self.population += pop_delta
+        self.culture_points_rate += new_entry[1] - old_entry[1]
+        #buildings do not directly add yield in the current dataset, so only the population delta applies
+        self.total_yield -= pop_delta
 
         #null list to signify nothing upgrading.
         # [ISS-008] ISSUE : THIS WILL NEED TO BE CHANGED TO BE A SIMPLE REMOVAL OF THE 0TH INDEX
@@ -239,6 +251,13 @@ class Village(base_squares.Square):
         # used to update the villages building list with the new level and upgradeability
         field_data.level = level_plusone
         field_data.upgradeable = upgrade_possible
+        old_entry = f_data.field_dict[field_dict_key][current_level]
+        new_entry = f_data.field_dict[field_dict_key][level_plusone]
+        pop_delta = new_entry[2] - old_entry[2]
+        yield_delta = new_entry[4] - old_entry[4]
+        self.population += pop_delta
+        self.culture_points_rate += new_entry[1] - old_entry[1]
+        self.total_yield += yield_delta - pop_delta
 
         #null list to signify nothing upgrading.
         # [ISS-008] ISSUE : THIS WILL NEED TO BE CHANGED TO BE A SIMPLE REMOVAL OF THE 0TH INDEX
@@ -247,3 +266,24 @@ class Village(base_squares.Square):
 
         #nothing returned, merely modifies values in place
 
+
+    def _recalculate_population_and_culture(self):
+        total_pop = 0
+        total_cp_rate = 0.0
+        total_field_yield = 0.0
+        for field_id, field_obj in self.fields.items():
+            prefix = field_id[:4]
+            entry = f_data.field_dict[prefix][field_obj.level]
+            total_pop += entry[2]
+            total_cp_rate += entry[1]
+            total_field_yield += entry[4]
+        for building in self.buildings.values():
+            if building and len(building) > 1:
+                building_key = building[0]
+                level = building[1]
+                entry = b_data.building_dict[building_key][level]
+                total_pop += entry[2]
+                total_cp_rate += entry[1]
+        self.population = total_pop
+        self.culture_points_rate = float(total_cp_rate)
+        self.total_yield = float(total_field_yield - total_pop)
