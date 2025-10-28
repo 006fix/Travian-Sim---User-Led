@@ -24,6 +24,7 @@ class Village(base_squares.Square):
         #default instantiation values
         self.storage_cap = [800, 800, 800, 800]
         self.stored = [800,800,800,800]
+        self.currently_upgrading = []
 
     #function to calculate storage, ignoring existence of the premade 800 setup for empty vils
     def calculate_storage(self):
