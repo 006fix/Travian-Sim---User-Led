@@ -32,3 +32,4 @@
 - **ISS-018** — `simulation_runner/game_state_progression.py`: Global state (`game_counter`, `time_will_elapse`, `global_last_active`) is mutated via module-level globals; encapsulate in a Kernel/GameState object and pass dependencies explicitly.
 - **ISS-019** — `simulation_runner/game_state_progression.py`: Fallback `min_elapsed = 1` advances time even when no actors are pending; replace with a heartbeat event or guard to detect stalled simulations instead of silently ticking.
 - **ISS-020** — `simulation_runner/game_state_progression.py`: No logging/metrics around tick decisions. Add structured logging once the kernel is formalised.
+- **ISS-021** — `simulation_runner/run_logger.py`: Resource snapshot logging is blocked by the current “wake implies completion” assumption; revisit once upgrade completion events are explicit.

@@ -1,7 +1,7 @@
 
 import Classes.player as player
-import Classes.village as village
 import random
+from simulation_runner import run_logger
 
 class base_controller(player.Player):
 
@@ -64,10 +64,23 @@ class base_controller(player.Player):
 					#i hate it and it needs to change to be better, also for romans.
 					if len(curr_village.currently_upgrading) > 0:
 						job = curr_village.currently_upgrading[0]
+						location = getattr(curr_village, "location", None)
 						# [ISS-015] still relying on nested lists; swap to structured job records when queue logic is rewritten.
 						if len(job) == 2:
+							run_logger.log_completion(
+								player=self.name,
+								village_location=location,
+								job_type="building",
+								target=str(job),
+							)
 							curr_village.building_upgraded(job)
 						else:
+							run_logger.log_completion(
+								player=self.name,
+								village_location=location,
+								job_type="field",
+								target=job[0],
+							)
 							curr_village.field_upgraded(job[0])
 
 					#now we get possible buildings
@@ -102,19 +115,43 @@ class base_controller(player.Player):
 					#initiate the chosen upgrade
 					#but we have a check to make sure we're not currently upgrading something
 					if len(curr_village.currently_upgrading) != 0:
+						run_logger.log_action(
+							player=self.name,
+							village_location=getattr(curr_village, "location", None),
+							action_type="queue_blocked",
+							target=None,
+							wait_time=None,
+							reason="queue already busy",
+						)
 						raise ValueError("I have tried to initiate an upgrade, but I'm already upgrading something - why?")
 					else:
 						#if I have no valid upgrade options, pass, and the above logic sets that to the 20k
 						if chosen_item == None:
-							pass
+							run_logger.log_action(
+								player=self.name,
+								village_location=getattr(curr_village, "location", None),
+								action_type="idle",
+								target=None,
+								wait_time=None,
+								reason="no available upgrades",
+							)
 						else:
 							reset_time = True
 							#dual options to account for the dual structure
 							#issue - this is a huge headache and will only get worse, i really need to resolve this
 							if chosen_origin == 'buildings':
 								wait_time = curr_village.upgrade_building(chosen_item)
+								target_repr = str(chosen_item)
 							if chosen_origin == 'fields':
-								wait_time = curr_village.upgrade_field(chosen_item)
+								wait_time = curr_village.upgrade_field(chosen_item[0])
+								target_repr = chosen_item[0]
+							run_logger.log_action(
+								player=self.name,
+								village_location=getattr(curr_village, "location", None),
+								action_type=f"upgrade_{chosen_origin.rstrip('s')}",
+								target=target_repr,
+								wait_time=wait_time,
+							)
 							wait_time_list.append(wait_time)
 
 					if reset_time == True:

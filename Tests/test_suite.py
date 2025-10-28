@@ -16,6 +16,11 @@ from Specific_Functions.populate_players import (
     populate_players,
     populate_players_with_villages,
 )
+from Classes.village import Village
+from Classes.AI_Classes.generic_running_mechanism import base_controller
+from Generic_Functions.generic_functions import sec_val
+from Base_Data import Fields_Data as f_data
+from simulation_runner import game_state_progression as progress_state
 
 
 def _summarise_map(world: Dict[str, object]) -> List[Dict[str, object]]:
@@ -156,14 +161,17 @@ def test_populate_players_with_villages_assigns_tiles() -> Tuple[bool, str]:
     for name, obj in players.items():
         if len(obj.villages) != 1:
             return False, f"Player {name} has villages {obj.villages}; expected exactly one."
-        tile_key = obj.villages[0]
-        if tile_key in taken_tiles:
-            return False, f"Village {tile_key} assigned to multiple players."
-        taken_tiles.append(tile_key)
-        tile = world.get(tile_key)
-        if tile is None or getattr(tile, "type_square", None) != "village":
-            return False, f"Map entry {tile_key} was not converted into a village."
-    return True, "populate_players_with_villages attaches one unique village per player."
+        village_obj = obj.villages[0]
+        if not isinstance(village_obj, Village):
+            return False, f"Player {name} did not receive a Village instance."
+        location = village_obj.location
+        if location in taken_tiles:
+            return False, f"Village {location} assigned to multiple players."
+        taken_tiles.append(location)
+        tile = world.get(location)
+        if tile is not village_obj or getattr(tile, "type_square", None) != "village":
+            return False, f"Map entry {location} was not converted into the owning Village object."
+    return True, "populate_players_with_villages attaches one unique Village object per player."
 
 
 def test_populate_players_with_villages_handles_saturation() -> Tuple[bool, str]:
@@ -180,6 +188,100 @@ def test_populate_players_with_villages_handles_saturation() -> Tuple[bool, str]
     return False, "Expected populate_players_with_villages to raise when the map is saturated."
 
 
+def test_populate_players_with_villages_returns_controllers() -> Tuple[bool, str]:
+    """Ensure controller instances are returned after population."""
+    world = _build_world(40, seed=210)
+    rng_holder = random.Random(77)
+    players = populate_players_with_villages(world, 4, rng_holder=rng_holder)
+    for name, obj in players.items():
+        if not isinstance(obj, base_controller):
+            return False, f"Player {name} is not a base_controller instance: {type(obj).__name__}"
+    return True, "populate_players_with_villages returns controller instances."
+
+
+def test_base_controller_countdown_no_action() -> Tuple[bool, str]:
+    """Confirm next_action counts down when no work is performed."""
+    controller = base_controller("Timer", ("+", "+"), None, None)
+    controller.villages = []
+    controller.next_action = 100
+    remaining = controller.will_i_act(current_time=10, global_last_active=0)
+    if remaining != 90 or controller.next_action != 90:
+        return False, f"Expected countdown to 90, saw {remaining} with next_action {controller.next_action}"
+    return True, "Controller countdown path reduces next_action by elapsed time."
+
+
+def test_base_controller_triggers_field_upgrade() -> Tuple[bool, str]:
+    """Ensure a controller can trigger a field upgrade via its AI hook."""
+    world = _build_world(40, seed=250)
+    rng_holder = random.Random(33)
+    players = populate_players_with_villages(world, 1, rng_holder=rng_holder)
+    controller = next(iter(players.values()))
+    village_obj = controller.villages[0]
+    field_id = next(iter(village_obj.fields.keys()))
+
+    class StubAI:
+        def __init__(self, action):
+            self.action = action
+        def derive_next_action(self):
+            return self.action
+
+    controller.ai_controller = StubAI(([field_id], "fields"))
+    controller.next_action = 10
+    initial_stock = village_obj.stored.copy()
+    field_prefix = field_id[:4]
+    current_level = village_obj.fields[field_id].level
+    upgrade_cost = f_data.field_dict[field_prefix][current_level][0]
+    expected_wait = sec_val(f_data.field_dict[field_prefix][current_level][3])
+
+    wait_time = controller.will_i_act(current_time=10, global_last_active=0)
+    if wait_time != expected_wait or controller.next_action != expected_wait:
+        return False, f"Expected wait {expected_wait}, saw {wait_time} and next_action {controller.next_action}"
+    if village_obj.currently_upgrading != [[field_id]]:
+        return False, f"Upgrade queue unexpected: {village_obj.currently_upgrading}"
+    for idx in range(4):
+        if village_obj.stored[idx] != initial_stock[idx] - upgrade_cost[idx]:
+            return False, "Upgrade cost was not deducted correctly."
+    return True, "Controller triggers field upgrade and schedules next wake correctly."
+
+
+def test_game_state_progression_tick_advances() -> Tuple[bool, str]:
+    """Validate game_state_progression advances by the minimum scheduled delay."""
+    progress_state.game_counter = 0
+    progress_state.turn_counter = 0
+    progress_state.time_elapsed = 0
+    progress_state.time_will_elapse = 3
+    progress_state.global_last_active = 0
+
+    class PassiveTile:
+        type_square = "habitable"
+        def next_update(self):
+            return 5
+
+    class StubController:
+        def __init__(self):
+            self.calls: List[Tuple[int, int]] = []
+            self.next_action = 10
+        def will_i_act(self, current_time, global_last_active):
+            self.calls.append((current_time, global_last_active))
+            return 7
+
+    map_dict = {"p": PassiveTile()}
+    stub_player = StubController()
+    player_dict = {"player": stub_player}
+
+    progress_state.simulate_time(map_dict, player_dict)
+
+    if progress_state.game_counter != 3:
+        return False, f"Game counter expected 3, found {progress_state.game_counter}"
+    if progress_state.time_will_elapse != 5:
+        return False, f"time_will_elapse expected 5, found {progress_state.time_will_elapse}"
+    if progress_state.turn_counter != 1:
+        return False, f"turn_counter expected 1, found {progress_state.turn_counter}"
+    if stub_player.calls != [(3, 0)]:
+        return False, f"Player was not called with expected timestamps: {stub_player.calls}"
+    return True, "Game state progression advances using the minimum scheduled delay."
+
+
 TESTS = [
     ("Map determinism with seeded RNG", test_map_determinism),
     ("Map dimensions respect radius", test_map_dimensions),
@@ -188,6 +290,10 @@ TESTS = [
     ("populate_players basic behaviour", test_populate_players_basic),
     ("populate_players_with_villages assignment", test_populate_players_with_villages_assigns_tiles),
     ("populate_players_with_villages saturation handling", test_populate_players_with_villages_handles_saturation),
+    ("populate_players_with_villages returns controllers", test_populate_players_with_villages_returns_controllers),
+    ("base_controller countdown without action", test_base_controller_countdown_no_action),
+    ("base_controller triggers field upgrade", test_base_controller_triggers_field_upgrade),
+    ("game_state_progression tick advances", test_game_state_progression_tick_advances),
 ]
 
 

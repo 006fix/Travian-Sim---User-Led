@@ -14,6 +14,8 @@ time_will_elapse = 0
 #this is a global version of when we were last awake
 global_last_active = 0
 
+from simulation_runner import run_logger
+
 def set_time_elapsed():
     global time_elapsed
     global time_will_elapse
@@ -72,7 +74,16 @@ def simulate_time(map_dict, player_dict):
     else:
         # [ISS-019] temporal fallback hides stalled sims; replace with heartbeat event or explicit guard.
         min_elapsed = 1
-    
+
+    run_logger.log_tick(
+        turn=turn_counter,
+        game_time=game_counter,
+        elapsed=time_elapsed,
+        scheduled_delay=min_elapsed,
+        passive_candidates=passive_actions,
+        player_candidates=player_actions,
+    )
+
     time_will_elapse = min_elapsed
     # [ISS-020] enrich metrics/logging once kernel endorses tick summaries.
     turn_counter += 1
