@@ -28,7 +28,7 @@ run_logger.start_run(
 )
 
 #now trigger the loop
-for i in range(5):
+for i in range(100):
     progress_state.simulate_time(base_map, player_dict) 
 
 log_output = run_logger.finalise_run(

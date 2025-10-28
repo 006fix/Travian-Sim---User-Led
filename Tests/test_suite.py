@@ -203,11 +203,11 @@ def test_base_controller_countdown_no_action() -> Tuple[bool, str]:
     """Confirm next_action counts down when no work is performed."""
     controller = base_controller("Timer", ("+", "+"), None, None)
     controller.villages = []
-    controller.next_action = 100
+    controller.next_action_due_at = 100
     remaining = controller.will_i_act(current_time=10, global_last_active=0)
-    if remaining != 90 or controller.next_action != 90:
-        return False, f"Expected countdown to 90, saw {remaining} with next_action {controller.next_action}"
-    return True, "Controller countdown path reduces next_action by elapsed time."
+    if remaining != 90 or controller.next_action_due_at != 100:
+        return False, f"Expected countdown to 90, saw {remaining} with due_at {controller.next_action_due_at}"
+    return True, "Controller countdown path reduces time remaining by elapsed time."
 
 
 def test_base_controller_triggers_field_upgrade() -> Tuple[bool, str]:
@@ -226,7 +226,7 @@ def test_base_controller_triggers_field_upgrade() -> Tuple[bool, str]:
             return self.action
 
     controller.ai_controller = StubAI(([field_id], "fields"))
-    controller.next_action = 10
+    controller.next_action_due_at = 10
     initial_stock = village_obj.stored.copy()
     field_prefix = field_id[:4]
     current_level = village_obj.fields[field_id].level
@@ -234,8 +234,8 @@ def test_base_controller_triggers_field_upgrade() -> Tuple[bool, str]:
     expected_wait = sec_val(f_data.field_dict[field_prefix][current_level][3])
 
     wait_time = controller.will_i_act(current_time=10, global_last_active=0)
-    if wait_time != expected_wait or controller.next_action != expected_wait:
-        return False, f"Expected wait {expected_wait}, saw {wait_time} and next_action {controller.next_action}"
+    if wait_time != expected_wait or controller.next_action_due_at != 10 + expected_wait:
+        return False, f"Expected wait {expected_wait}, saw {wait_time} and due_at {controller.next_action_due_at}"
     if village_obj.currently_upgrading != [[field_id]]:
         return False, f"Upgrade queue unexpected: {village_obj.currently_upgrading}"
     for idx in range(4):

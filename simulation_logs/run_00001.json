@@ -1,0 +1,601 @@
+{
+  "metadata": {
+    "map_radius": 40,
+    "num_players": 20,
+    "run_id": "00001"
+  },
+  "events": [
+    {
+      "event": "run_started",
+      "metadata": {
+        "map_radius": 40,
+        "num_players": 20
+      }
+    },
+    {
+      "event": "action",
+      "player": "Player0",
+      "village": "[-34, '/', -25]",
+      "action_type": "upgrade_field",
+      "target": "Iron1",
+      "wait_time": 450
+    },
+    {
+      "event": "action",
+      "player": "Player1",
+      "village": "[29, '/', 34]",
+      "action_type": "upgrade_building",
+      "target": "[0, 'main_building']",
+      "wait_time": 2620
+    },
+    {
+      "event": "action",
+      "player": "Player2",
+      "village": "[33, '/', -40]",
+      "action_type": "upgrade_field",
+      "target": "Iron3",
+      "wait_time": 450
+    },
+    {
+      "event": "action",
+      "player": "Player3",
+      "village": "[-22, '/', -34]",
+      "action_type": "upgrade_field",
+      "target": "Clay3",
+      "wait_time": 220
+    },
+    {
+      "event": "action",
+      "player": "Player4",
+      "village": "[33, '/', 31]",
+      "action_type": "upgrade_field",
+      "target": "Wood2",
+      "wait_time": 260
+    },
+    {
+      "event": "action",
+      "player": "Player5",
+      "village": "[31, '/', -34]",
+      "action_type": "upgrade_building",
+      "target": "[1, 'warehouse']",
+      "wait_time": 2000
+    },
+    {
+      "event": "action",
+      "player": "Player6",
+      "village": "[23, '/', 29]",
+      "action_type": "upgrade_field",
+      "target": "Iron4",
+      "wait_time": 450
+    },
+    {
+      "event": "action",
+      "player": "Player7",
+      "village": "[29, '/', 25]",
+      "action_type": "upgrade_field",
+      "target": "Iron3",
+      "wait_time": 450
+    },
+    {
+      "event": "action",
+      "player": "Player8",
+      "village": "[-39, '/', 36]",
+      "action_type": "upgrade_field",
+      "target": "Crop3",
+      "wait_time": 150
+    },
+    {
+      "event": "action",
+      "player": "Player9",
+      "village": "[32, '/', 21]",
+      "action_type": "upgrade_field",
+      "target": "Clay1",
+      "wait_time": 220
+    },
+    {
+      "event": "action",
+      "player": "Player10",
+      "village": "[-27, '/', -40]",
+      "action_type": "upgrade_field",
+      "target": "Iron2",
+      "wait_time": 450
+    },
+    {
+      "event": "action",
+      "player": "Player11",
+      "village": "[-38, '/', -29]",
+      "action_type": "upgrade_field",
+      "target": "Wood2",
+      "wait_time": 260
+    },
+    {
+      "event": "action",
+      "player": "Player12",
+      "village": "[23, '/', 35]",
+      "action_type": "upgrade_field",
+      "target": "Crop6",
+      "wait_time": 150
+    },
+    {
+      "event": "action",
+      "player": "Player13",
+      "village": "[-26, '/', -30]",
+      "action_type": "upgrade_field",
+      "target": "Iron1",
+      "wait_time": 450
+    },
+    {
+      "event": "action",
+      "player": "Player14",
+      "village": "[-25, '/', 27]",
+      "action_type": "upgrade_field",
+      "target": "Wood4",
+      "wait_time": 260
+    },
+    {
+      "event": "action",
+      "player": "Player15",
+      "village": "[30, '/', -36]",
+      "action_type": "upgrade_field",
+      "target": "Iron2",
+      "wait_time": 450
+    },
+    {
+      "event": "action",
+      "player": "Player16",
+      "village": "[-23, '/', 32]",
+      "action_type": "upgrade_field",
+      "target": "Iron3",
+      "wait_time": 450
+    },
+    {
+      "event": "action",
+      "player": "Player17",
+      "village": "[31, '/', -38]",
+      "action_type": "upgrade_field",
+      "target": "Iron3",
+      "wait_time": 450
+    },
+    {
+      "event": "action",
+      "player": "Player18",
+      "village": "[26, '/', -31]",
+      "action_type": "upgrade_field",
+      "target": "Iron4",
+      "wait_time": 450
+    },
+    {
+      "event": "action",
+      "player": "Player19",
+      "village": "[25, '/', -21]",
+      "action_type": "upgrade_field",
+      "target": "Iron4",
+      "wait_time": 450
+    },
+    {
+      "event": "tick",
+      "turn": 0,
+      "game_time": 0,
+      "elapsed": 0,
+      "scheduled_delay": 150,
+      "passive_candidates": [],
+      "player_candidates": [
+        450,
+        2620,
+        450,
+        220,
+        260,
+        2000,
+        450,
+        450,
+        150,
+        220,
+        450,
+        260,
+        150,
+        450,
+        260,
+        450,
+        450,
+        450,
+        450,
+        450
+      ]
+    },
+    {
+      "event": "completion",
+      "player": "Player8",
+      "village": "[-39, '/', 36]",
+      "job_type": "field",
+      "target": "Crop3"
+    },
+    {
+      "event": "action",
+      "player": "Player8",
+      "village": "[-39, '/', 36]",
+      "action_type": "upgrade_field",
+      "target": "Iron4",
+      "wait_time": 450
+    },
+    {
+      "event": "completion",
+      "player": "Player12",
+      "village": "[23, '/', 35]",
+      "job_type": "field",
+      "target": "Crop6"
+    },
+    {
+      "event": "action",
+      "player": "Player12",
+      "village": "[23, '/', 35]",
+      "action_type": "upgrade_field",
+      "target": "Iron2",
+      "wait_time": 450
+    },
+    {
+      "event": "tick",
+      "turn": 1,
+      "game_time": 150,
+      "elapsed": 150,
+      "scheduled_delay": 70,
+      "passive_candidates": [],
+      "player_candidates": [
+        300,
+        2470,
+        300,
+        70,
+        110,
+        1850,
+        300,
+        300,
+        450,
+        70,
+        300,
+        110,
+        450,
+        300,
+        110,
+        300,
+        300,
+        300,
+        300,
+        300
+      ]
+    },
+    {
+      "event": "completion",
+      "player": "Player3",
+      "village": "[-22, '/', -34]",
+      "job_type": "field",
+      "target": "Clay3"
+    },
+    {
+      "event": "action",
+      "player": "Player3",
+      "village": "[-22, '/', -34]",
+      "action_type": "upgrade_field",
+      "target": "Iron4",
+      "wait_time": 450
+    },
+    {
+      "event": "completion",
+      "player": "Player9",
+      "village": "[32, '/', 21]",
+      "job_type": "field",
+      "target": "Clay1"
+    },
+    {
+      "event": "action",
+      "player": "Player9",
+      "village": "[32, '/', 21]",
+      "action_type": "upgrade_field",
+      "target": "Iron1",
+      "wait_time": 450
+    },
+    {
+      "event": "tick",
+      "turn": 2,
+      "game_time": 220,
+      "elapsed": 70,
+      "scheduled_delay": -110,
+      "passive_candidates": [],
+      "player_candidates": [
+        80,
+        2250,
+        80,
+        450,
+        -110,
+        1630,
+        80,
+        80,
+        380,
+        450,
+        80,
+        -110,
+        380,
+        80,
+        -110,
+        80,
+        80,
+        80,
+        80,
+        80
+      ]
+    },
+    {
+      "event": "completion",
+      "player": "Player4",
+      "village": "[33, '/', 31]",
+      "job_type": "field",
+      "target": "Wood2"
+    },
+    {
+      "event": "action",
+      "player": "Player4",
+      "village": "[33, '/', 31]",
+      "action_type": "upgrade_field",
+      "target": "Clay4",
+      "wait_time": 220
+    },
+    {
+      "event": "completion",
+      "player": "Player11",
+      "village": "[-38, '/', -29]",
+      "job_type": "field",
+      "target": "Wood2"
+    },
+    {
+      "event": "action",
+      "player": "Player11",
+      "village": "[-38, '/', -29]",
+      "action_type": "upgrade_field",
+      "target": "Clay4",
+      "wait_time": 220
+    },
+    {
+      "event": "completion",
+      "player": "Player14",
+      "village": "[-25, '/', 27]",
+      "job_type": "field",
+      "target": "Wood4"
+    },
+    {
+      "event": "action",
+      "player": "Player14",
+      "village": "[-25, '/', 27]",
+      "action_type": "upgrade_field",
+      "target": "Iron2",
+      "wait_time": 450
+    },
+    {
+      "event": "tick",
+      "turn": 3,
+      "game_time": 110,
+      "elapsed": -110,
+      "scheduled_delay": -30,
+      "passive_candidates": [],
+      "player_candidates": [
+        -30,
+        2140,
+        -30,
+        560,
+        220,
+        1520,
+        -30,
+        -30,
+        420,
+        560,
+        -30,
+        220,
+        420,
+        -30,
+        450,
+        -30,
+        -30,
+        -30,
+        -30,
+        -30
+      ]
+    },
+    {
+      "event": "completion",
+      "player": "Player0",
+      "village": "[-34, '/', -25]",
+      "job_type": "field",
+      "target": "Iron1"
+    },
+    {
+      "event": "action",
+      "player": "Player0",
+      "village": "[-34, '/', -25]",
+      "action_type": "upgrade_field",
+      "target": "Wood2",
+      "wait_time": 260
+    },
+    {
+      "event": "completion",
+      "player": "Player2",
+      "village": "[33, '/', -40]",
+      "job_type": "field",
+      "target": "Iron3"
+    },
+    {
+      "event": "action",
+      "player": "Player2",
+      "village": "[33, '/', -40]",
+      "action_type": "upgrade_field",
+      "target": "Crop2",
+      "wait_time": 150
+    },
+    {
+      "event": "completion",
+      "player": "Player6",
+      "village": "[23, '/', 29]",
+      "job_type": "field",
+      "target": "Iron4"
+    },
+    {
+      "event": "action",
+      "player": "Player6",
+      "village": "[23, '/', 29]",
+      "action_type": "upgrade_field",
+      "target": "Wood4",
+      "wait_time": 260
+    },
+    {
+      "event": "completion",
+      "player": "Player7",
+      "village": "[29, '/', 25]",
+      "job_type": "field",
+      "target": "Iron3"
+    },
+    {
+      "event": "action",
+      "player": "Player7",
+      "village": "[29, '/', 25]",
+      "action_type": "upgrade_field",
+      "target": "Clay1",
+      "wait_time": 220
+    },
+    {
+      "event": "completion",
+      "player": "Player10",
+      "village": "[-27, '/', -40]",
+      "job_type": "field",
+      "target": "Iron2"
+    },
+    {
+      "event": "action",
+      "player": "Player10",
+      "village": "[-27, '/', -40]",
+      "action_type": "upgrade_field",
+      "target": "Wood4",
+      "wait_time": 260
+    },
+    {
+      "event": "completion",
+      "player": "Player13",
+      "village": "[-26, '/', -30]",
+      "job_type": "field",
+      "target": "Iron1"
+    },
+    {
+      "event": "action",
+      "player": "Player13",
+      "village": "[-26, '/', -30]",
+      "action_type": "upgrade_field",
+      "target": "Wood4",
+      "wait_time": 260
+    },
+    {
+      "event": "completion",
+      "player": "Player15",
+      "village": "[30, '/', -36]",
+      "job_type": "field",
+      "target": "Iron2"
+    },
+    {
+      "event": "action",
+      "player": "Player15",
+      "village": "[30, '/', -36]",
+      "action_type": "upgrade_field",
+      "target": "Crop4",
+      "wait_time": 150
+    },
+    {
+      "event": "completion",
+      "player": "Player16",
+      "village": "[-23, '/', 32]",
+      "job_type": "field",
+      "target": "Iron3"
+    },
+    {
+      "event": "action",
+      "player": "Player16",
+      "village": "[-23, '/', 32]",
+      "action_type": "upgrade_field",
+      "target": "Wood4",
+      "wait_time": 260
+    },
+    {
+      "event": "completion",
+      "player": "Player17",
+      "village": "[31, '/', -38]",
+      "job_type": "field",
+      "target": "Iron3"
+    },
+    {
+      "event": "action",
+      "player": "Player17",
+      "village": "[31, '/', -38]",
+      "action_type": "upgrade_field",
+      "target": "Crop5",
+      "wait_time": 150
+    },
+    {
+      "event": "completion",
+      "player": "Player18",
+      "village": "[26, '/', -31]",
+      "job_type": "field",
+      "target": "Iron4"
+    },
+    {
+      "event": "action",
+      "player": "Player18",
+      "village": "[26, '/', -31]",
+      "action_type": "upgrade_field",
+      "target": "Iron1",
+      "wait_time": 450
+    },
+    {
+      "event": "completion",
+      "player": "Player19",
+      "village": "[25, '/', -21]",
+      "job_type": "field",
+      "target": "Iron4"
+    },
+    {
+      "event": "action",
+      "player": "Player19",
+      "village": "[25, '/', -21]",
+      "action_type": "upgrade_field",
+      "target": "Iron4",
+      "wait_time": 920
+    },
+    {
+      "event": "tick",
+      "turn": 4,
+      "game_time": 80,
+      "elapsed": -30,
+      "scheduled_delay": 150,
+      "passive_candidates": [],
+      "player_candidates": [
+        260,
+        2060,
+        150,
+        700,
+        250,
+        1440,
+        260,
+        220,
+        490,
+        700,
+        260,
+        250,
+        490,
+        260,
+        480,
+        150,
+        260,
+        150,
+        450,
+        920
+      ]
+    },
+    {
+      "event": "run_summary",
+      "ticks": 5,
+      "final_game_time": 80
+    }
+  ]
+}

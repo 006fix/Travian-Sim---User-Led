@@ -1,194 +1,162 @@
+import random
 
 import Classes.player as player
-import random
 from simulation_runner import run_logger
 
+
 class base_controller(player.Player):
+    def __init__(
+        self,
+        name,
+        quadrant,
+        race,
+        ai_controller,
+        population=0,
+        attack_points=0,
+        defence_points=0,
+        raid_points=0,
+        culture_points=0,
+        villages=None,
+        AI_type="generic",
+        rng_holder=None,
+    ):
+        if villages is None:
+            villages = []
+        super().__init__(
+            name,
+            quadrant,
+            race,
+            ai_controller,
+            population=population,
+            attack_points=attack_points,
+            defence_points=defence_points,
+            raid_points=raid_points,
+            culture_points=culture_points,
+        )
+        self.villages = villages
+        self.rng_holder = rng_holder if rng_holder is not None else random
+        self.next_action_due_at = 0
 
-		def __init__(self, name, quadrant, race, ai_controller,
-				 population=0, attack_points=0, defence_points=0, raid_points=0, culture_points=0,
-				 villages=[], AI_type = 'generic'):
+    def reset_next_action(self, current_time, wait_duration):
+        if wait_duration is not None:
+            self.next_action_due_at = current_time + wait_duration
+        else:
+            #issue - this is hardcoded into the AI as a "wait 20k seconds" element - should be dynamic and
+            #controlled at a high level
+            self.next_action_due_at = current_time + 20000
+        #issue - this function doesn't return anything, but it should absolutely log stuff
 
-			super().__init__(name, quadrant, race, ai_controller,
-					population=0, attack_points=0, defence_points=0, raid_points=0, culture_points=0)
+    def will_i_act(self, current_time, global_last_active):
+        remaining = self.next_action_due_at - current_time
+        if remaining > 0:
+            return remaining
 
-		def reset_next_action(self, upgrade_time):
-			  
-			if upgrade_time != []:
-				 self.next_action = upgrade_time
-			else:
-				 #issue - this is hardcoded into the AI as a "wait 20k seconds" element - should be dynamic and
-				 #controlled at a high level
-				 self.next_action = 20000
-			#issue - this function doesn't return anything, but it should absolutely log stuff
+        local_duration_slept = current_time - self.Last_Active
+        self.Last_Active = current_time
 
-		def will_i_act(self, current_time, global_last_active):
-			 
-			#variable used to determine if the player is taking an action
-			player_acting = False
-			#creating reset_time for use later
-			reset_time = False
+        wait_time_list = []
+        reset_time = False
 
-			#removed old legacy if sleep == False check
-			duration_slept = current_time - global_last_active
-			local_duration_slept = current_time - self.Last_Active
+        for curr_village in self.villages:
+            resources_gained = curr_village.yield_calc()
+            for i in range(len(resources_gained)):
+                resources_gained[i] *= local_duration_slept
+            current_stockpile = curr_village.stored
+            current_max = curr_village.storage_cap
+            for i in range(len(resources_gained)):
+                if resources_gained[i] + current_stockpile[i] > current_max[i]:
+                    current_stockpile[i] = current_max[i]
+                else:
+                    current_stockpile[i] = current_stockpile[i] + resources_gained[i]
+            curr_village.stored = current_stockpile
 
-			if duration_slept == self.next_action:
-				 #issue - at this point there should be some logging to reflect actions taken
+            if len(curr_village.currently_upgrading) > 0:
+                job = curr_village.currently_upgrading[0]
+                location = getattr(curr_village, "location", None)
+                # [ISS-015] still relying on nested lists; swap to structured job records when queue logic is rewritten.
+                if len(job) == 2:
+                    run_logger.log_completion(
+                        player=self.name,
+                        village_location=location,
+                        job_type="building",
+                        target=str(job),
+                    )
+                    curr_village.building_upgraded(job)
+                else:
+                    run_logger.log_completion(
+                        player=self.name,
+                        village_location=location,
+                        job_type="field",
+                        target=job[0],
+                    )
+                    curr_village.field_upgraded(job[0])
 
-				#if we're taking an action, update the last active flag to reflect doing something
-				self.Last_Active = current_time
+            possible_actions = curr_village.possible_buildings()
 
-				#if multiple villages exist, we may need multiple wait times, therefore building it in now
-				#issue - this actually wakes up all villages for a player every time one of them needs to be
-				#thats suboptimal behaviour - low priority, but still an issue
-				wait_time_list = []
-				for curr_village in self.villages:
-					#this used to use map data to find the village, it should now find it within the players
-					resources_gained = curr_village.yield_calc()
-					for i in range(len(resources_gained)):
-						resources_gained[i] *= local_duration_slept
-					current_stockpile = curr_village.stored
-					current_max = curr_village.storage_cap
-					for i in range(len(resources_gained)):
-						if(resources_gained)[i] + current_stockpile[i] > current_max[i]:
-							current_stockpile[i] = current_max[i]
-						else:
-							current_stockpile[i] = current_stockpile[i] + resources_gained[i]
-					curr_village.stored = current_stockpile
+            if self.ai_controller is None:
+                merged_list = []
+                origin_list = []
+                for key in possible_actions:
+                    hold_list = possible_actions[key]
+                    for item in hold_list:
+                        merged_list.append(item)
+                        origin_list.append(key)
 
-					#check to see if there was a village that was currently upgrading
-					#issue - this currently just assumes that if you've woken up, then you've finished
-					#this is obviously not true, and we need to change this. Left as is for now
-					#issue - this is incredibly messy as a result of needing to handle both villages and fields
-					#i hate it and it needs to change to be better, also for romans.
-					if len(curr_village.currently_upgrading) > 0:
-						job = curr_village.currently_upgrading[0]
-						location = getattr(curr_village, "location", None)
-						# [ISS-015] still relying on nested lists; swap to structured job records when queue logic is rewritten.
-						if len(job) == 2:
-							run_logger.log_completion(
-								player=self.name,
-								village_location=location,
-								job_type="building",
-								target=str(job),
-							)
-							curr_village.building_upgraded(job)
-						else:
-							run_logger.log_completion(
-								player=self.name,
-								village_location=location,
-								job_type="field",
-								target=job[0],
-							)
-							curr_village.field_upgraded(job[0])
+                if len(merged_list) == 0:
+                    chosen_item = None
+                    chosen_origin = None
+                else:
+                    index = self.rng_holder.randint(0, len(merged_list) - 1)
+                    chosen_item = merged_list[index]
+                    chosen_origin = origin_list[index]
+            else:
+                chosen_item, chosen_origin = self.ai_controller.derive_next_action()
 
-					#now we get possible buildings
-					possible_actions = curr_village.possible_buildings()
+            if len(curr_village.currently_upgrading) != 0:
+                run_logger.log_action(
+                    player=self.name,
+                    village_location=getattr(curr_village, "location", None),
+                    action_type="queue_blocked",
+                    target=None,
+                    wait_time=None,
+                    reason="queue already busy",
+                )
+                raise ValueError("I have tried to initiate an upgrade, but I'm already upgrading something - why?")
+            else:
+                if chosen_item is None:
+                    run_logger.log_action(
+                        player=self.name,
+                        village_location=getattr(curr_village, "location", None),
+                        action_type="idle",
+                        target=None,
+                        wait_time=None,
+                        reason="no available upgrades",
+                    )
+                else:
+                    reset_time = True
+                    if chosen_origin == "buildings":
+                        wait_time = curr_village.upgrade_building(chosen_item)
+                        target_repr = str(chosen_item)
+                    elif chosen_origin == "fields":
+                        wait_time = curr_village.upgrade_field(chosen_item[0])
+                        target_repr = chosen_item[0]
+                    else:
+                        wait_time = None
+                        target_repr = None
+                    run_logger.log_action(
+                        player=self.name,
+                        village_location=getattr(curr_village, "location", None),
+                        action_type=f"upgrade_{chosen_origin.rstrip('s')}" if chosen_origin else "unknown",
+                        target=target_repr,
+                        wait_time=wait_time,
+                    )
+                    if wait_time is not None:
+                        wait_time_list.append(wait_time)
 
+        if reset_time and wait_time_list:
+            true_wait_time = min(wait_time_list)
+            self.reset_next_action(current_time, true_wait_time)
+            return true_wait_time
 
-					##now we need to get the actual action, but at present, this is not possible.
-					#if ai_controller = none, it will use full randomness
-					#issue - we need a full random AI, which will utilise the below logic, and then plug in via derive next action
-					if self.ai_controller == None:
-						merged_list = []
-						origin_list = []
-						for key in possible_actions:
-							hold_list = possible_actions[key]
-							for item in hold_list:
-								merged_list.append(item)
-								origin_list.append(key)
-						
-						if len(merged_list) == 0:
-							chosen_item = None
-							chosen_origin = None
-						else:
-							index = random.randint(0, len(merged_list) - 1)
-							chosen_item = merged_list[index]
-							chosen_origin = origin_list[index]
-					else:
-						#all ai controllers will use a function called "derive next action, called here"
-						chosen_item, chosen_origin = self.ai_controller.derive_next_action()
-					
-
-
-					#initiate the chosen upgrade
-					#but we have a check to make sure we're not currently upgrading something
-					if len(curr_village.currently_upgrading) != 0:
-						run_logger.log_action(
-							player=self.name,
-							village_location=getattr(curr_village, "location", None),
-							action_type="queue_blocked",
-							target=None,
-							wait_time=None,
-							reason="queue already busy",
-						)
-						raise ValueError("I have tried to initiate an upgrade, but I'm already upgrading something - why?")
-					else:
-						#if I have no valid upgrade options, pass, and the above logic sets that to the 20k
-						if chosen_item == None:
-							run_logger.log_action(
-								player=self.name,
-								village_location=getattr(curr_village, "location", None),
-								action_type="idle",
-								target=None,
-								wait_time=None,
-								reason="no available upgrades",
-							)
-						else:
-							reset_time = True
-							#dual options to account for the dual structure
-							#issue - this is a huge headache and will only get worse, i really need to resolve this
-							if chosen_origin == 'buildings':
-								wait_time = curr_village.upgrade_building(chosen_item)
-								target_repr = str(chosen_item)
-							if chosen_origin == 'fields':
-								wait_time = curr_village.upgrade_field(chosen_item[0])
-								target_repr = chosen_item[0]
-							run_logger.log_action(
-								player=self.name,
-								village_location=getattr(curr_village, "location", None),
-								action_type=f"upgrade_{chosen_origin.rstrip('s')}",
-								target=target_repr,
-								wait_time=wait_time,
-							)
-							wait_time_list.append(wait_time)
-
-					if reset_time == True:
-						true_wait_time = min(wait_time_list)
-						self.reset_next_action(true_wait_time)
-					else:
-						#issue - i'm passing an empty list here. This is unneeded, as its already done above
-						#but its actually cleaner logic to have it live here, as the building may not be upgraded
-						self.reset_next_action([])
-						true_wait_time = self.next_action
-
-			else:
-				#helps the ticker advance.
-				#issue - i still don't think i follow precisely how this works. don't raise as issue, but ammend comment with explanation
-				self.next_action -= local_duration_slept
-				true_wait_time = self.next_action
-			
-			return true_wait_time
-
-			
-
-
-							
-
-
-
-					
-
-												 
-					
-					
-
-
-
-
-			 
-			
-		
-				
-			
+        self.reset_next_action(current_time, None)
+        return self.next_action_due_at - current_time

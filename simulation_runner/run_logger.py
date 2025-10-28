@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Dict, List, Optional
+import json
 
 RUN_METADATA: Dict[str, Any] = {}
 RUN_EVENTS: List[Dict[str, Any]] = []
+
+LOG_DIR = Path("simulation_logs")
+LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def reset() -> None:
@@ -96,7 +101,21 @@ def finalise_run(summary: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Close out the run and return the collected log."""
     if summary is not None:
         log_event("run_summary", summary)
-    return {"metadata": RUN_METADATA.copy(), "events": list(RUN_EVENTS)}
+    payload = {"metadata": RUN_METADATA.copy(), "events": list(RUN_EVENTS)}
+    _write_log_to_disk(payload)
+    return payload
+
+
+def _write_log_to_disk(payload: Dict[str, Any]) -> None:
+    run_id = payload["metadata"].get("run_id")
+    if run_id is None:
+        existing = sorted(LOG_DIR.glob("run_*.json"))
+        next_id = len(existing) + 1
+        run_id = f"{next_id:05d}"
+        payload["metadata"]["run_id"] = run_id
+    log_path = LOG_DIR / f"run_{run_id}.json"
+    with log_path.open("w", encoding="utf-8") as fh:
+        json.dump(payload, fh, indent=2)
 
 
 def get_events() -> List[Dict[str, Any]]:

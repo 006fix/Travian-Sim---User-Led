@@ -36,6 +36,9 @@ def populate_players_with_villages(map_dict, num_players, rng_holder=None):
             map_dict[village_key] = created_village
             active_player.villages.append(created_village)
 
+            seed_value = rng_holder.randint(0, 10**9) if hasattr(rng_holder, "randint") else random.randint(0, 10**9)
+            local_rng = random.Random(seed_value)
+
             controller_player = base_controller(
                 active_player.name,
                 active_player.quadrant,
@@ -46,6 +49,7 @@ def populate_players_with_villages(map_dict, num_players, rng_holder=None):
                 defence_points=active_player.defence_points,
                 raid_points=active_player.raid_points,
                 culture_points=active_player.culture_points,
+                rng_holder=local_rng,
             )
             controller_player.villages = active_player.villages
             player_dict[key] = controller_player

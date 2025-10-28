@@ -18,13 +18,8 @@ class Player:
         self.Last_Active = 0
         self.Sleep = False
 
-
-        self.next_action = False
+        self.next_action_due_at = 0
 
     def next_update(self):
         # [ISS-004] placeholder scheduling logic; replace when proper event handling is built.
-        if self.next_action == False:
-            wait_duration = True
-        else:
-            wait_duration = self.next_action
-        return wait_duration
+        return self.next_action_due_at
