@@ -10,6 +10,7 @@ if __package__ in (None, ""):
 from master_controller.simulation_constraints import create_simulation_constraints
 from Specific_Functions.map_creation import map_creation, modify_base_map
 from Specific_Functions.populate_players import populate_players_with_villages
+from simulation_runner import game_state_progression as progress_state
 
 map_radius, num_players = create_simulation_constraints()
 base_map = map_creation(map_radius)
@@ -17,3 +18,7 @@ base_map = modify_base_map(base_map)
 
 #now we add a section to populate the map with villagers
 player_dict = populate_players_with_villages(base_map, num_players)
+
+#now trigger the loop
+for i in range(4):
+    progress_state.simulate_time(base_map, player_dict) 
