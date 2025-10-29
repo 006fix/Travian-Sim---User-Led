@@ -70,3 +70,8 @@ ext_update returns None pending future interaction logic.
 
 - **ISS-009** resolved - Classes/village.py: Building helper guards terminal levels and consumers now use it to avoid [False] sentinel crashes.
 
+
+## 2025-10-29 18:45:00
+
+- **ISS-001** resolved - Map generation and downstream consumers now use tuple (x, y) coordinates instead of stringified lists.
+

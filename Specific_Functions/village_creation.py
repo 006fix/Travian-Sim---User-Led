@@ -65,7 +65,7 @@ def create_village(map_dict, owner, quadrant=None, rng_holder=None):
             continue
         if tile.type_hab != [4, 4, 4, 6]:
             continue
-        coords = _parse_location(tile.location)
+        coords = tile.location if isinstance(tile.location, tuple) else tile.location if isinstance(tile.location, tuple) else _parse_location(tile.location)
         x_val = coords[0]
         y_val = coords[1]
 

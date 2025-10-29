@@ -53,10 +53,18 @@ def log_tick(
     )
 
 
+def _serialise_location(location: Optional[Any]) -> Optional[Any]:
+    if isinstance(location, tuple):
+        return list(location)
+    if isinstance(location, list):
+        return list(location)
+    return location
+
+
 def log_action(
     *,
     player: str,
-    village_location: Optional[str],
+    village_location: Optional[Any],
     action_type: str,
     target: Optional[str],
     wait_time: Optional[int],
@@ -69,7 +77,7 @@ def log_action(
     """Record the action (or inaction) chosen by a controller."""
     payload: Dict[str, Any] = {
         "player": player,
-        "village": village_location,
+        "village": _serialise_location(village_location),
         "action_type": action_type,
         "target": target,
         "wait_time": wait_time,
@@ -90,7 +98,7 @@ def log_action(
 def log_completion(
     *,
     player: str,
-    village_location: Optional[str],
+    village_location: Optional[Any],
     job_type: str,
     target: str,
     population: Optional[int] = None,
@@ -103,7 +111,7 @@ def log_completion(
     """Record completion of a queued job."""
     payload: Dict[str, Any] = {
         "player": player,
-        "village": village_location,
+        "village": _serialise_location(village_location),
         "job_type": job_type,
         "target": target,
     }
