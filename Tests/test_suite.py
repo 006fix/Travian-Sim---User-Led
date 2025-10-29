@@ -460,6 +460,36 @@ def test_main_building_speed_modifier_applies() -> Tuple[bool, str]:
     return True, "Upgrade durations respect the main building speed modifier."
 
 
+def test_building_upgrade_handles_max_level() -> Tuple[bool, str]:
+    """Ensure building upgrades handle terminal levels without crashing."""
+    world = _build_world(40, seed=913)
+    rng_holder = random.Random(12)
+    players = populate_players_with_villages(world, 1, rng_holder=rng_holder)
+    controller = next(iter(players.values()))
+    village_obj = controller.villages[0]
+
+    job = [0, "main_building"]
+    village_obj.buildings[0][1] = 19
+    village_obj.buildings[0][2] = True
+    village_obj.stored = [1_000_000, 1_000_000, 1_000_000, 1_000_000]
+
+    wait_time = village_obj.upgrade_building(job)
+    if wait_time <= 0:
+        return False, "Expected positive wait time for main building upgrade."
+
+    village_obj.currently_upgrading.append(job)
+    village_obj.building_upgraded(job)
+
+    if village_obj.buildings[0][1] != 20:
+        return False, "Main building level did not increment to the terminal level."
+    if village_obj.buildings[0][2] is not False:
+        return False, "Main building should no longer be upgradeable at max level."
+    available = village_obj.possible_buildings()["buildings"]
+    if any(item["name"] == "main_building" for item in available):
+        return False, "Main building remained in the upgrade list after reaching max level."
+    return True, "Terminal building upgrades complete cleanly and mark the job finished."
+
+
 TESTS = [
     ("Map determinism with seeded RNG", test_map_determinism),
     ("Map dimensions respect radius", test_map_dimensions),
@@ -477,6 +507,7 @@ TESTS = [
     ("crop yield subtracts population usage", test_crop_yield_uses_population_consumption),
     ("crop storage never negative", test_crop_storage_clamped_at_zero),
     ("main building speed modifier applies", test_main_building_speed_modifier_applies),
+    ("building upgrade handles max level", test_building_upgrade_handles_max_level),
 ]
 
 

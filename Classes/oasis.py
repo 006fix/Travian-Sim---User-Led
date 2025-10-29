@@ -5,7 +5,7 @@ class Oasis(loc_sq.Square):
     def __init__(self, location):
         super().__init__(location)
         self.type_square = 'oasis'
-        self.interactable = True
+        self.interactable = False
         self.resources = []
         # type one addition
         randval = random.randint(0, 100)
@@ -46,9 +46,5 @@ class Oasis(loc_sq.Square):
         self.next_action = False
     
     def next_update(self):
-        # [ISS-003] placeholder non-interaction; replace with definitive oasis behaviour.
-        if self.next_action == False:
-            wait_duration = True
-        else:
-            wait_duration = self.next_action
-        return wait_duration
+        # [ISS-003] resolved: oases remain non-interactable until active behaviour is implemented.
+        return None

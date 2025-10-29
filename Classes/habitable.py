@@ -6,7 +6,7 @@ class Habitable(base_squares.Square):
     # make sure the default classes go at the end
     def __init__(self, location):
         super().__init__(location)
-        self.interactable=True
+        self.interactable=False
         #note - is the below needed? it looks like it should inhabit it directly from base_squares?
         self.type_square = 'habitable'
 
@@ -39,9 +39,5 @@ class Habitable(base_squares.Square):
         self.next_action = False
 
     def next_update(self):
-        # [ISS-002] placeholder sleep handling; replace with proper interaction logic.
-        if self.next_action == False:
-            wait_duration = True
-        else:
-            wait_duration = self.next_action
-        return wait_duration
+        # [ISS-002] resolved: habitable tiles are currently passive; report no interaction required.
+        return None

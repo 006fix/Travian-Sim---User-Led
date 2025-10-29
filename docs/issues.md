@@ -3,8 +3,8 @@
 ## 2025-10-21 13:17:02
 
 - **ISS-001** — `Specific_Functions/map_creation.py`: Coordinate string format (`locval = [x,"/",y]`) may break downstream consumers that expect numeric pairs. Evaluate representation and adjust callers accordingly.
-- **ISS-002** — `Classes/habitable.py`: `next_update` uses placeholder sleep handling and should be replaced with a proper interaction model.
-- **ISS-003** — `Classes/oasis.py`: `next_update` placeholder keeps oases non-interactable; needs a cleaner mechanism.
+- **ISS-002** (resolved 2025-10-28) - `Classes/habitable.py`: `next_update` uses placeholder sleep handling and should be replaced with a proper interaction model.
+- **ISS-003** (resolved 2025-10-28) - `Classes/oasis.py`: `next_update` placeholder keeps oases non-interactable; needs a cleaner mechanism.
 
 ## 2025-10-21 16:11:53
 
@@ -56,4 +56,17 @@
 ## 2025-10-28 23:25:05
 
 - **ISS-021** resolved - simulation_runner/run_logger.py: Completion events now capture stored resources and storage caps alongside population and culture metrics.
+
+
+## 2025-10-28 23:46:09
+
+- **ISS-002** resolved - Classes/habitable.py: Habitable tiles are temporarily marked non-interactable; 
+ext_update now returns None until active behaviour is introduced.
+- **ISS-003** resolved - Classes/oasis.py: Oases are treated as passive tiles; 
+ext_update returns None pending future interaction logic.
+
+
+## 2025-10-28 23:59:50
+
+- **ISS-009** resolved - Classes/village.py: Building helper guards terminal levels and consumers now use it to avoid [False] sentinel crashes.
 

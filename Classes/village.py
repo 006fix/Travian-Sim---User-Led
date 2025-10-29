@@ -92,7 +92,10 @@ class Village(base_squares.Square):
                 #if upgradeable
                 if holdval[2] == True:
                     keyval = holdval[0]
-                    upgrade_cost = b_data.building_dict[keyval][holdval_level][0]
+                    entry, upgradeable = self._get_building_entry(keyval, holdval_level)
+                    if entry is None or upgradeable is False:
+                        continue
+                    upgrade_cost = entry[0]
                     #default to assuming enough res, then make false if not true
                     enough_res = True
                     for i in range(4):
@@ -139,10 +142,13 @@ class Village(base_squares.Square):
         #Issue - this is a case where we need better logging functionality.
         if upgradeable_check != True:
             raise ValueError ("You appear to have attempted to upgrade a building that cannot be upgraded :(")
-        upgrade_cost = b_data.building_dict[building_data_key][current_level][0]
+        entry, _ = self._get_building_entry(building_data_key, current_level)
+        if entry is None:
+            raise ValueError(f"Building data missing for {building_data_key} at level {current_level}")
+        upgrade_cost = entry[0]
 
         #get upgrade time for the building
-        upgrade_time = b_data.building_dict[building_data_key][current_level][3]
+        upgrade_time = entry[3]
         speed_modifier = self._main_building_speed_modifier()
         true_upgrade_time = gen_func.sec_val(upgrade_time)
         true_upgrade_time = max(1, int(round(true_upgrade_time * speed_modifier)))
@@ -205,11 +211,12 @@ class Village(base_squares.Square):
         #so not risk of overflow error
         #however, this is still an extant issue, as it uses the false flag.
         level_plusone = current_level + 1
-        still_upgradeable = b_data.building_dict[building_data_key][level_plusone][0]
-        if still_upgradeable[0] == False:
-            upgrade_possible = False
-        else:
-            upgrade_possible = True
+        old_entry, _ = self._get_building_entry(building_data_key, current_level)
+        if old_entry is None:
+            raise ValueError(f"Building data missing for {building_data_key} at level {current_level}")
+        new_entry, upgrade_possible = self._get_building_entry(building_data_key, level_plusone)
+        if new_entry is None:
+            raise ValueError(f"Building data missing for {building_data_key} at level {level_plusone}")
 
         #applying the new values derived above for the upgraded building
         old_vals = self.buildings[building_dict_key]
@@ -217,8 +224,6 @@ class Village(base_squares.Square):
         old_vals[1] = level_plusone
         #potentially not needed, superflous step
         self.buildings[building_dict_key] = old_vals
-        old_entry = b_data.building_dict[building_data_key][current_level]
-        new_entry = b_data.building_dict[building_data_key][level_plusone]
         pop_delta = new_entry[2] - old_entry[2]
         self.population += pop_delta
         self.culture_points_rate += new_entry[1] - old_entry[1]
@@ -300,3 +305,17 @@ class Village(base_squares.Square):
             except KeyError:
                 pass
         return 5
+
+    def _get_building_entry(self, building_name, level):
+        """Safely fetch building data and indicate if further upgrades are available."""
+        table = b_data.building_dict.get(building_name)
+        if table is None:
+            return None, False
+        entry = table.get(level)
+        if entry is None:
+            return None, False
+        cost = entry[0]
+        upgradeable = True
+        if not isinstance(cost, (list, tuple)) or len(cost) == 0 or cost[0] is False:
+            upgradeable = False
+        return entry, upgradeable

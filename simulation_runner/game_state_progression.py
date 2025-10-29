@@ -35,8 +35,9 @@ def check_passive(map_dict):
         if holdval.type_square in ('habitable', 'oasis'):
             holder = holdval.next_update()
             # [ISS-017] clarify next_update contract (should return numeric or None, not True/False).
-            if holder != True:
-                next_action_list.append(holder)
+            if holder is None or holder is True:
+                continue
+            next_action_list.append(holder)
     return next_action_list
 
 def check_players(player_dict):
@@ -51,6 +52,8 @@ def check_players(player_dict):
     for key in player_dict:
         active_player = player_dict[key]
         wait_time = active_player.will_i_act(game_counter, global_last_active)
+        if wait_time is None:
+            continue
         next_action_list.append(wait_time)
 
     return next_action_list
@@ -69,8 +72,12 @@ def simulate_time(map_dict, player_dict):
     player_actions = check_players(player_dict)
     all_actions = passive_actions + player_actions
 
-    if len(all_actions) > 0:
-        min_elapsed = min(all_actions)
+    numeric_actions = [val for val in all_actions if isinstance(val, (int, float))]
+    if numeric_actions:
+        min_elapsed = min(numeric_actions)
+    elif len(all_actions) > 0:
+        # fallback when only sentinels remain; move to heartbeat once scheduler refactored.
+        min_elapsed = 1
     else:
         # [ISS-019] temporal fallback hides stalled sims; replace with heartbeat event or explicit guard.
         min_elapsed = 1
