@@ -9,6 +9,8 @@ RUN_EVENTS: List[Dict[str, Any]] = []
 
 LOG_DIR = Path("simulation_logs")
 LOG_DIR.mkdir(parents=True, exist_ok=True)
+SCOREBOARD_DIR = LOG_DIR / "scoreboards"
+SCOREBOARD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def reset() -> None:
@@ -133,15 +135,18 @@ def log_completion(
 
 def finalise_run(summary: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Close out the run and return the collected log."""
-    # [ISS-022] scoreboard aggregation should summarise per-player/village metrics for quick reference.
     if summary is not None:
         log_event("run_summary", summary)
     payload = {"metadata": RUN_METADATA.copy(), "events": list(RUN_EVENTS)}
-    _write_log_to_disk(payload)
+    scoreboard = _build_scoreboard()
+    payload["scoreboard"] = {"players": scoreboard}
+    run_id = _write_log_to_disk(payload)
+    scoreboard_path = _write_scoreboard_to_disk(run_id, scoreboard)
+    payload["metadata"]["scoreboard_path"] = str(scoreboard_path)
     return payload
 
 
-def _write_log_to_disk(payload: Dict[str, Any]) -> None:
+def _write_log_to_disk(payload: Dict[str, Any]) -> str:
     run_id = payload["metadata"].get("run_id")
     if run_id is None:
         existing = sorted(LOG_DIR.glob("run_*.json"))
@@ -151,6 +156,61 @@ def _write_log_to_disk(payload: Dict[str, Any]) -> None:
     log_path = LOG_DIR / f"run_{run_id}.json"
     with log_path.open("w", encoding="utf-8") as fh:
         json.dump(payload, fh, indent=2)
+    return run_id
+
+
+def _write_scoreboard_to_disk(run_id: str, scoreboard: List[Dict[str, Any]]) -> Path:
+    scoreboard_path = SCOREBOARD_DIR / f"scoreboard_{run_id}.json"
+    payload = {"run_id": run_id, "players": scoreboard}
+    with scoreboard_path.open("w", encoding="utf-8") as fh:
+        json.dump(payload, fh, indent=2)
+    return scoreboard_path
+
+
+def _build_scoreboard() -> List[Dict[str, Any]]:
+    per_player: Dict[str, Dict[str, Any]] = {}
+    for event in RUN_EVENTS:
+        player = event.get("player")
+        if player is None:
+            continue
+        entry = per_player.setdefault(
+            player,
+            {"actions": 0, "completions": 0, "last_event": None},
+        )
+        if event.get("event") == "action":
+            entry["actions"] += 1
+        elif event.get("event") == "completion":
+            entry["completions"] += 1
+        entry["last_event"] = event
+
+    scoreboard: List[Dict[str, Any]] = []
+    for player, stats in per_player.items():
+        last_event = stats.get("last_event") or {}
+        scoreboard.append(
+            {
+                "player": player,
+                "actions": stats["actions"],
+                "completions": stats["completions"],
+                "population": last_event.get("population"),
+                "culture_rate": last_event.get("culture_rate"),
+                "culture_total": last_event.get("culture_total"),
+                "total_yield": last_event.get("total_yield"),
+                "resources": last_event.get("resources"),
+                "storage_cap": last_event.get("storage_cap"),
+                "last_village": _serialise_location(last_event.get("village")),
+                "last_event_type": last_event.get("event"),
+                "last_action_type": last_event.get("action_type") or last_event.get("job_type"),
+                "last_target": last_event.get("target"),
+                "last_wait_time": last_event.get("wait_time"),
+            }
+        )
+    scoreboard.sort(
+        key=lambda item: (
+            -(item.get("population") or 0),
+            -(item.get("culture_total") or 0.0),
+        )
+    )
+    return scoreboard
 
 
 def get_events() -> List[Dict[str, Any]]:

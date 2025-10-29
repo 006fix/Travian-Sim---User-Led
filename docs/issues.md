@@ -36,7 +36,7 @@
 
 ## 2025-10-28 09:15:00
 
-- **ISS-022** - `simulation_runner/run_logger.py`: Logger emits per-event metrics but lacks aggregated per-player/per-village summaries; introduce a scoreboard view for quick post-run comparison.
+- **ISS-022** (resolved 2025-10-29) - `simulation_runner/run_logger.py`: Logger emits per-event metrics but lacks aggregated per-player/per-village summaries; introduce a scoreboard view for quick post-run comparison.
 
 ## 2025-10-28 19:33:04
 
@@ -74,4 +74,9 @@ ext_update returns None pending future interaction logic.
 ## 2025-10-29 18:45:00
 
 - **ISS-001** resolved - Map generation and downstream consumers now use tuple (x, y) coordinates instead of stringified lists.
+
+
+## 2025-10-29 19:36:47
+
+- **ISS-022** resolved - run_logger now produces per-player scoreboards in simulation_logs/scoreboards.
 

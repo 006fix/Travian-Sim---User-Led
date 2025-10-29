@@ -9,6 +9,7 @@ if __package__ in (None, ""):
         sys.path.insert(0, str(ROOT))
 
 import random
+import json
 
 from master_controller.simulation_constraints import create_simulation_constraints
 from Specific_Functions.map_creation import map_creation, modify_base_map
@@ -386,6 +387,64 @@ def test_logger_records_village_metrics() -> Tuple[bool, str]:
     return True, "Logger captures population, culture, and yield metrics on events."
 
 
+def test_run_logger_generates_scoreboard() -> Tuple[bool, str]:
+    """Ensure scoreboard data is written as a separate artefact."""
+    run_logger.reset()
+    run_logger.start_run({"map_radius": 1, "num_players": 1})
+    run_logger.log_action(
+        player="Alpha",
+        village_location=(0, 0),
+        action_type="idle",
+        target=None,
+        wait_time=None,
+        population=5,
+        culture_rate=2.0,
+        culture_total=1.0,
+        total_yield=10.0,
+    )
+    run_logger.log_completion(
+        player="Alpha",
+        village_location=(0, 0),
+        job_type="field",
+        target="Wood1",
+        population=6,
+        culture_rate=2.5,
+        culture_total=2.0,
+        total_yield=12.0,
+        resources=[1, 2, 3, 4],
+        storage_cap=[800, 800, 800, 800],
+    )
+    run_logger.log_action(
+        player="Beta",
+        village_location=(1, 1),
+        action_type="idle",
+        target=None,
+        wait_time=None,
+        population=4,
+        culture_rate=1.5,
+        culture_total=0.5,
+        total_yield=9.0,
+    )
+    payload = run_logger.finalise_run({"ticks": 1, "final_game_time": 10})
+    scoreboard_path = Path(payload["metadata"]["scoreboard_path"])
+    if not scoreboard_path.exists():
+        return False, "Scoreboard file was not created."
+    scoreboard_data = json.loads(scoreboard_path.read_text(encoding="utf-8"))
+    players = {entry["player"]: entry for entry in scoreboard_data.get("players", [])}
+    alpha_entry = players.get("Alpha")
+    beta_entry = players.get("Beta")
+    scoreboard_path.unlink(missing_ok=True)
+    if alpha_entry is None or beta_entry is None:
+        return False, "Scoreboard is missing expected player entries."
+    if alpha_entry["actions"] != 1 or alpha_entry["completions"] != 1:
+        return False, "Scoreboard counters do not match Alpha activity."
+    if alpha_entry["population"] != 6 or alpha_entry["total_yield"] != 12.0:
+        return False, "Scoreboard did not capture Alpha's final stats."
+    if beta_entry["actions"] != 1 or beta_entry["population"] != 4:
+        return False, "Scoreboard did not capture Beta's action."
+    return True, "Scoreboard file summarises per-player metrics."
+
+
 def test_crop_yield_uses_population_consumption() -> Tuple[bool, str]:
     """Confirm crop output subtracts population usage once."""
     world = _build_world(40, seed=512)
@@ -504,6 +563,7 @@ TESTS = [
     ("culture points accumulate", test_culture_points_accumulate),
     ("game_state_progression tick advances", test_game_state_progression_tick_advances),
     ("run_logger captures village metrics", test_logger_records_village_metrics),
+    ("run_logger generates scoreboard", test_run_logger_generates_scoreboard),
     ("crop yield subtracts population usage", test_crop_yield_uses_population_consumption),
     ("crop storage never negative", test_crop_storage_clamped_at_zero),
     ("main building speed modifier applies", test_main_building_speed_modifier_applies),
