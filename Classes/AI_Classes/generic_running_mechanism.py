@@ -2,6 +2,7 @@ import random
 
 import Classes.player as player
 from simulation_runner import run_logger
+from Classes.AI_Classes.generic_ai_base import GenericAIBase, build_info_packet
 
 
 class base_controller(player.Player):
@@ -36,6 +37,7 @@ class base_controller(player.Player):
         self.villages = villages
         self.rng_holder = rng_holder if rng_holder is not None else random
         self.next_action_due_at = 0
+        self.ai_label = getattr(self.ai_controller, "name", "Generic Random")
 
     def reset_next_action(self, current_time, wait_duration):
         if wait_duration is not None:
@@ -91,6 +93,7 @@ class base_controller(player.Player):
                         total_yield=curr_village.total_yield,
                         resources=curr_village.stored.copy(),
                         storage_cap=curr_village.storage_cap.copy(),
+                        ai_label=self.ai_label,
                     )
                 else:
                     curr_village.field_upgraded(job[0])
@@ -105,21 +108,33 @@ class base_controller(player.Player):
                         total_yield=curr_village.total_yield,
                         resources=curr_village.stored.copy(),
                         storage_cap=curr_village.storage_cap.copy(),
+                        ai_label=self.ai_label,
                     )
 
             possible_actions = curr_village.possible_buildings()
+            merged_list = [
+                item for subset in possible_actions.values() for item in subset
+            ]
 
             if self.ai_controller is None:
-                merged_list = [
-                    item for subset in possible_actions.values() for item in subset
-                ]
                 if merged_list:
                     index = self.rng_holder.randint(0, len(merged_list) - 1)
                     chosen_item = merged_list[index]
                 else:
                     chosen_item = None
             else:
-                chosen_item = self.ai_controller.derive_next_action()
+                if hasattr(self.ai_controller, "derive_next_action"):
+                    chosen_item = self.ai_controller.derive_next_action()
+                elif isinstance(self.ai_controller, GenericAIBase) or hasattr(self.ai_controller, "select_building"):
+                    info_packet = build_info_packet(
+                        player=self,
+                        village=curr_village,
+                        game_time=current_time,
+                        global_last_active=global_last_active,
+                    )
+                    chosen_item = self.ai_controller.select_building(merged_list, info_packet)
+                else:
+                    chosen_item = None
 
             if len(curr_village.currently_upgrading) != 0:
                 run_logger.log_action(
@@ -133,6 +148,7 @@ class base_controller(player.Player):
                     culture_rate=curr_village.culture_points_rate,
                     culture_total=curr_village.culture_points_total,
                     total_yield=curr_village.total_yield,
+                    ai_label=self.ai_label,
                 )
                 raise ValueError("I have tried to initiate an upgrade, but I'm already upgrading something - why?")
             else:
@@ -148,6 +164,7 @@ class base_controller(player.Player):
                         culture_rate=curr_village.culture_points_rate,
                         culture_total=curr_village.culture_points_total,
                         total_yield=curr_village.total_yield,
+                        ai_label=self.ai_label,
                     )
                 else:
                     reset_time = True
@@ -177,6 +194,7 @@ class base_controller(player.Player):
                         culture_rate=curr_village.culture_points_rate,
                         culture_total=curr_village.culture_points_total,
                         total_yield=curr_village.total_yield,
+                        ai_label=self.ai_label,
                     )
                     if wait_time is not None:
                         wait_time_list.append(wait_time)

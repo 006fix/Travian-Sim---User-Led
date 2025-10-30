@@ -1,0 +1,405 @@
+{
+  "run_id": "00027",
+  "players": [
+    {
+      "player": "Player13_WW",
+      "actions": 52,
+      "completions": 12,
+      "ai_label": "Resource Specialist - Wood",
+      "population": 26,
+      "culture_rate": 12.0,
+      "culture_total": 2540.6138888888886,
+      "total_yield": 80.0,
+      "resources": null,
+      "storage_cap": null,
+      "last_village": [
+        38,
+        -27
+      ],
+      "last_event_type": "action",
+      "last_action_type": "idle",
+      "last_target": null,
+      "last_wait_time": null
+    },
+    {
+      "player": "Player15_IM",
+      "actions": 51,
+      "completions": 11,
+      "ai_label": "Resource Specialist - Iron",
+      "population": 26,
+      "culture_rate": 11.0,
+      "culture_total": 2345.8833333333337,
+      "total_yield": 76.0,
+      "resources": null,
+      "storage_cap": null,
+      "last_village": [
+        -31,
+        -35
+      ],
+      "last_event_type": "action",
+      "last_action_type": "idle",
+      "last_target": null,
+      "last_wait_time": null
+    },
+    {
+      "player": "Player11_CC",
+      "actions": 56,
+      "completions": 16,
+      "ai_label": "Resource Specialist - Clay",
+      "population": 24,
+      "culture_rate": 15.0,
+      "culture_total": 3064.8972222222233,
+      "total_yield": 100.0,
+      "resources": null,
+      "storage_cap": null,
+      "last_village": [
+        -34,
+        23
+      ],
+      "last_event_type": "action",
+      "last_action_type": "idle",
+      "last_target": null,
+      "last_wait_time": null
+    },
+    {
+      "player": "Player2_CC",
+      "actions": 54,
+      "completions": 14,
+      "ai_label": "Resource Specialist - Clay",
+      "population": 24,
+      "culture_rate": 14.0,
+      "culture_total": 2892.127777777779,
+      "total_yield": 94.0,
+      "resources": null,
+      "storage_cap": null,
+      "last_village": [
+        32,
+        21
+      ],
+      "last_event_type": "action",
+      "last_action_type": "idle",
+      "last_target": null,
+      "last_wait_time": null
+    },
+    {
+      "player": "Player8_IM",
+      "actions": 52,
+      "completions": 12,
+      "ai_label": "Resource Specialist - Iron",
+      "population": 24,
+      "culture_rate": 12.0,
+      "culture_total": 2535.3111111111107,
+      "total_yield": 82.0,
+      "resources": null,
+      "storage_cap": null,
+      "last_village": [
+        21,
+        38
+      ],
+      "last_event_type": "action",
+      "last_action_type": "idle",
+      "last_target": null,
+      "last_wait_time": null
+    },
+    {
+      "player": "Player7_WW",
+      "actions": 53,
+      "completions": 13,
+      "ai_label": "Resource Specialist - Wood",
+      "population": 24,
+      "culture_rate": 12.0,
+      "culture_total": 2529.852777777777,
+      "total_yield": 88.0,
+      "resources": null,
+      "storage_cap": null,
+      "last_village": [
+        26,
+        26
+      ],
+      "last_event_type": "action",
+      "last_action_type": "idle",
+      "last_target": null,
+      "last_wait_time": null
+    },
+    {
+      "player": "Player3_IM",
+      "actions": 51,
+      "completions": 11,
+      "ai_label": "Resource Specialist - Iron",
+      "population": 24,
+      "culture_rate": 12.0,
+      "culture_total": 2524.8861111111105,
+      "total_yield": 80.0,
+      "resources": null,
+      "storage_cap": null,
+      "last_village": [
+        -35,
+        31
+      ],
+      "last_event_type": "action",
+      "last_action_type": "idle",
+      "last_target": null,
+      "last_wait_time": null
+    },
+    {
+      "player": "Player18_WW",
+      "actions": 52,
+      "completions": 12,
+      "ai_label": "Resource Specialist - Wood",
+      "population": 24,
+      "culture_rate": 11.0,
+      "culture_total": 2340.141666666667,
+      "total_yield": 84.0,
+      "resources": null,
+      "storage_cap": null,
+      "last_village": [
+        -26,
+        36
+      ],
+      "last_event_type": "action",
+      "last_action_type": "idle",
+      "last_target": null,
+      "last_wait_time": null
+    },
+    {
+      "player": "Player14_WW",
+      "actions": 52,
+      "completions": 12,
+      "ai_label": "Resource Specialist - Wood",
+      "population": 23,
+      "culture_rate": 10.0,
+      "culture_total": 2129.483333333335,
+      "total_yield": 87.0,
+      "resources": null,
+      "storage_cap": null,
+      "last_village": [
+        24,
+        22
+      ],
+      "last_event_type": "action",
+      "last_action_type": "idle",
+      "last_target": null,
+      "last_wait_time": null
+    },
+    {
+      "player": "Player4_FF",
+      "actions": 56,
+      "completions": 15,
+      "ai_label": "Field Focus",
+      "population": 21,
+      "culture_rate": 15.0,
+      "culture_total": 3162.630555555557,
+      "total_yield": 97.0,
+      "resources": null,
+      "storage_cap": null,
+      "last_village": [
+        23,
+        29
+      ],
+      "last_event_type": "action",
+      "last_action_type": "idle",
+      "last_target": null,
+      "last_wait_time": null
+    },
+    {
+      "player": "Player17_CC",
+      "actions": 56,
+      "completions": 16,
+      "ai_label": "Resource Specialist - Clay",
+      "population": 21,
+      "culture_rate": 14.0,
+      "culture_total": 2864.791666666668,
+      "total_yield": 105.0,
+      "resources": null,
+      "storage_cap": null,
+      "last_village": [
+        -29,
+        -38
+      ],
+      "last_event_type": "action",
+      "last_action_type": "idle",
+      "last_target": null,
+      "last_wait_time": null
+    },
+    {
+      "player": "Player9_WW",
+      "actions": 53,
+      "completions": 12,
+      "ai_label": "Resource Specialist - Wood",
+      "population": 19,
+      "culture_rate": 9.0,
+      "culture_total": 1919.3694444444445,
+      "total_yield": 93.0,
+      "resources": null,
+      "storage_cap": null,
+      "last_village": [
+        -25,
+        -38
+      ],
+      "last_event_type": "action",
+      "last_action_type": "idle",
+      "last_target": null,
+      "last_wait_time": null
+    },
+    {
+      "player": "Player12_MB",
+      "actions": 79,
+      "completions": 15,
+      "ai_label": "Main Building Bias",
+      "population": 16,
+      "culture_rate": 13.0,
+      "culture_total": 2146.869444444444,
+      "total_yield": 106.0,
+      "resources": null,
+      "storage_cap": null,
+      "last_village": [
+        -29,
+        31
+      ],
+      "last_event_type": "action",
+      "last_action_type": "upgrade_building",
+      "last_target": "main_building",
+      "last_wait_time": 2620
+    },
+    {
+      "player": "Player1_MB",
+      "actions": 79,
+      "completions": 15,
+      "ai_label": "Main Building Bias",
+      "population": 16,
+      "culture_rate": 13.0,
+      "culture_total": 2146.011111111111,
+      "total_yield": 106.0,
+      "resources": null,
+      "storage_cap": null,
+      "last_village": [
+        33,
+        -40
+      ],
+      "last_event_type": "action",
+      "last_action_type": "upgrade_building",
+      "last_target": "main_building",
+      "last_wait_time": 2620
+    },
+    {
+      "player": "Player6_MB",
+      "actions": 79,
+      "completions": 15,
+      "ai_label": "Main Building Bias",
+      "population": 16,
+      "culture_rate": 13.0,
+      "culture_total": 1940.5055555555555,
+      "total_yield": 106.0,
+      "resources": null,
+      "storage_cap": null,
+      "last_village": [
+        36,
+        32
+      ],
+      "last_event_type": "action",
+      "last_action_type": "upgrade_building",
+      "last_target": "main_building",
+      "last_wait_time": 2620
+    },
+    {
+      "player": "Player0_BF",
+      "actions": 79,
+      "completions": 9,
+      "ai_label": "Building Focus",
+      "population": 16,
+      "culture_rate": 11.0,
+      "culture_total": 1540.5444444444445,
+      "total_yield": 74.0,
+      "resources": null,
+      "storage_cap": null,
+      "last_village": [
+        -29,
+        -29
+      ],
+      "last_event_type": "action",
+      "last_action_type": "idle",
+      "last_target": null,
+      "last_wait_time": null
+    },
+    {
+      "player": "Player16_MB",
+      "actions": 78,
+      "completions": 14,
+      "ai_label": "Main Building Bias",
+      "population": 14,
+      "culture_rate": 12.0,
+      "culture_total": 1947.3055555555559,
+      "total_yield": 104.0,
+      "resources": null,
+      "storage_cap": null,
+      "last_village": [
+        -32,
+        36
+      ],
+      "last_event_type": "action",
+      "last_action_type": "idle",
+      "last_target": null,
+      "last_wait_time": null
+    },
+    {
+      "player": "Player19_MB",
+      "actions": 78,
+      "completions": 13,
+      "ai_label": "Main Building Bias",
+      "population": 13,
+      "culture_rate": 12.0,
+      "culture_total": 1933.633333333334,
+      "total_yield": 99.0,
+      "resources": null,
+      "storage_cap": null,
+      "last_village": [
+        24,
+        -22
+      ],
+      "last_event_type": "action",
+      "last_action_type": "idle",
+      "last_target": null,
+      "last_wait_time": null
+    },
+    {
+      "player": "Player10_MB",
+      "actions": 78,
+      "completions": 13,
+      "ai_label": "Main Building Bias",
+      "population": 13,
+      "culture_rate": 12.0,
+      "culture_total": 1818.547222222223,
+      "total_yield": 99.0,
+      "resources": null,
+      "storage_cap": null,
+      "last_village": [
+        -29,
+        -33
+      ],
+      "last_event_type": "action",
+      "last_action_type": "idle",
+      "last_target": null,
+      "last_wait_time": null
+    },
+    {
+      "player": "Player5_BF",
+      "actions": 76,
+      "completions": 6,
+      "ai_label": "Building Focus",
+      "population": 10,
+      "culture_rate": 8.0,
+      "culture_total": 1139.4388888888889,
+      "total_yield": 68.0,
+      "resources": null,
+      "storage_cap": null,
+      "last_village": [
+        36,
+        27
+      ],
+      "last_event_type": "action",
+      "last_action_type": "idle",
+      "last_target": null,
+      "last_wait_time": null
+    }
+  ]
+}

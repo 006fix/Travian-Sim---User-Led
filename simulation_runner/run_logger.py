@@ -75,6 +75,7 @@ def log_action(
     culture_rate: Optional[float] = None,
     culture_total: Optional[float] = None,
     total_yield: Optional[float] = None,
+    ai_label: Optional[str] = None,
 ) -> None:
     """Record the action (or inaction) chosen by a controller."""
     payload: Dict[str, Any] = {
@@ -94,6 +95,8 @@ def log_action(
         payload["culture_total"] = culture_total
     if total_yield is not None:
         payload["total_yield"] = total_yield
+    if ai_label is not None:
+        payload["ai_label"] = ai_label
     log_event("action", payload)
 
 
@@ -109,6 +112,7 @@ def log_completion(
     total_yield: Optional[float] = None,
     resources: Optional[List[float]] = None,
     storage_cap: Optional[List[float]] = None,
+    ai_label: Optional[str] = None,
 ) -> None:
     """Record completion of a queued job."""
     payload: Dict[str, Any] = {
@@ -129,6 +133,8 @@ def log_completion(
         payload["resources"] = list(resources)
     if storage_cap is not None:
         payload["storage_cap"] = list(storage_cap)
+    if ai_label is not None:
+        payload["ai_label"] = ai_label
     log_event("completion", payload)
 
 
@@ -191,6 +197,7 @@ def _build_scoreboard() -> List[Dict[str, Any]]:
                 "player": player,
                 "actions": stats["actions"],
                 "completions": stats["completions"],
+                "ai_label": last_event.get("ai_label"),
                 "population": last_event.get("population"),
                 "culture_rate": last_event.get("culture_rate"),
                 "culture_total": last_event.get("culture_total"),
