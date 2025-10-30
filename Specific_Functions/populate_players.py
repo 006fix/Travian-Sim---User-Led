@@ -4,25 +4,31 @@ import Specific_Functions.village_creation as village_creation
 import random
 from Classes.AI_Classes.Hardcoded_AI.field_focus import FieldFocus
 from Classes.AI_Classes.Hardcoded_AI.field_focus_lowest import FieldFocusLowest
+from Classes.AI_Classes.Hardcoded_AI.field_focus_lowest_legacy import FieldFocusLowestLegacy
 from Classes.AI_Classes.Hardcoded_AI.building_focus import BuildingFocus
 from Classes.AI_Classes.Hardcoded_AI.main_building_bias import MainBuildingBias
 from Classes.AI_Classes.Hardcoded_AI.storage_first import StorageFirst
 from Classes.AI_Classes.Hardcoded_AI.balanced_lowest_level import BalancedLowestLevel
+from Classes.AI_Classes.Hardcoded_AI.storage_support_blend import StorageSupportBlend
 from Classes.AI_Classes.Hardcoded_AI.resource_specialists import (
     CropHoarder,
     WoodWorker,
     ClayCrafter,
     IronMiner,
 )
+from Classes.AI_Classes.Hardcoded_AI.early_field_focus import EarlyFieldFocus
 
 AI_OPTIONS = [
     {'tag': 'RND', 'label': 'Generic Random', 'builder': None},
     {'tag': 'FF', 'label': 'Field Focus', 'builder': FieldFocus},
     {'tag': 'FL', 'label': 'Field Focus - Lowest Level', 'builder': FieldFocusLowest},
+    {'tag': 'FLL', 'label': 'Field Focus - Lowest Level (Legacy)', 'builder': FieldFocusLowestLegacy},
     {'tag': 'BF', 'label': 'Building Focus', 'builder': BuildingFocus},
     {'tag': 'MB', 'label': 'Main Building Bias', 'builder': MainBuildingBias},
     {'tag': 'SF', 'label': 'Storage First', 'builder': StorageFirst},
     {'tag': 'BL', 'label': 'Balanced Lowest Level', 'builder': BalancedLowestLevel},
+    {'tag': 'SS', 'label': 'Storage & Support Blend', 'builder': StorageSupportBlend},
+    {'tag': 'EF', 'label': 'Early Field Focus', 'builder': EarlyFieldFocus},
     {'tag': 'CH', 'label': 'Resource Specialist - Crop', 'builder': CropHoarder},
     {'tag': 'WW', 'label': 'Resource Specialist - Wood', 'builder': WoodWorker},
     {'tag': 'CC', 'label': 'Resource Specialist - Clay', 'builder': ClayCrafter},
