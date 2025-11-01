@@ -123,6 +123,13 @@ class Village(base_squares.Square):
             holdval_level = holdval.level
             key2 = key[:4]
             if holdval.upgradeable is True:
+                current_entry = f_data.field_dict[key2][holdval_level]
+                next_entry = f_data.field_dict[key2].get(holdval_level + 1)
+                if next_entry is None:
+                    continue
+                pop_delta = next_entry[2] - current_entry[2]
+                if pop_delta >= crop_yield_per_hour:
+                    continue
                 upgrade_cost = f_data.field_dict[key2][holdval_level][0]
                 enough_res = True
                 for i in range(4):
@@ -256,6 +263,9 @@ class Village(base_squares.Square):
         #buildings do not directly add yield in the current dataset, so only the population delta applies
         self.total_yield -= pop_delta
 
+        if building_data_key in ("warehouse", "granary"):
+            self.calculate_storage()
+
         #remove only the completed job
         self.remove_upgrade_job(job.get('id'))
 
@@ -290,6 +300,11 @@ class Village(base_squares.Square):
         field_data.upgradeable = upgrade_possible
         old_entry = f_data.field_dict[field_dict_key][current_level]
         new_entry = f_data.field_dict[field_dict_key][level_plusone]
+        field_data.upgrade_cost = new_entry[0]
+        field_data.field_yield = new_entry[4]
+        field_data.cp = new_entry[1]
+        field_data.pop = new_entry[2]
+        field_data.upgrade_time = gen_func.sec_val(new_entry[3])
         pop_delta = new_entry[2] - old_entry[2]
         yield_delta = new_entry[4] - old_entry[4]
         self.population += pop_delta

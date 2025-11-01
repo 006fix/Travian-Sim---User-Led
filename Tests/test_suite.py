@@ -561,6 +561,35 @@ def test_building_upgrade_handles_max_level() -> Tuple[bool, str]:
     return True, "Terminal building upgrades complete cleanly and mark the job finished."
 
 
+def test_storage_building_updates_capacity() -> Tuple[bool, str]:
+    """Warehouse/granary upgrades should refresh the village storage caps."""
+    world = _build_world(40, seed=110)
+    rng_holder = random.Random(5)
+    players = populate_players_with_villages(world, 1, rng_holder=rng_holder)
+    controller = next(iter(players.values()))
+    village_obj = controller.villages[0]
+
+    village_obj.stored = [1_000_000, 1_000_000, 1_000_000, 1_000_000]
+    initial_cap = village_obj.storage_cap.copy()
+
+    wait_time = village_obj.upgrade_building([1, "warehouse"])
+    if wait_time <= 0:
+        return False, "Expected warehouse upgrade to require positive time."
+    job = next(iter(village_obj.currently_upgrading.values()))
+    village_obj.building_upgraded(job)
+
+    if village_obj.storage_cap[0] <= initial_cap[0]:
+        return False, "Warehouse upgrade did not increase storage capacity."
+
+    wait_time = village_obj.upgrade_building([2, "granary"])
+    job = next(iter(village_obj.currently_upgrading.values()))
+    village_obj.building_upgraded(job)
+    if village_obj.storage_cap[3] <= initial_cap[3]:
+        return False, "Granary upgrade did not increase crop storage capacity."
+
+    return True, "Storage buildings refresh capacity after upgrades."
+
+
 TESTS = [
     ("Map determinism with seeded RNG", test_map_determinism),
     ("Map dimensions respect radius", test_map_dimensions),
@@ -580,6 +609,7 @@ TESTS = [
     ("crop storage never negative", test_crop_storage_clamped_at_zero),
     ("main building speed modifier applies", test_main_building_speed_modifier_applies),
     ("building upgrade handles max level", test_building_upgrade_handles_max_level),
+    ("storage building updates capacity", test_storage_building_updates_capacity),
 ]
 
 
@@ -603,3 +633,4 @@ def run_all_tests() -> bool:
 
 if __name__ == "__main__":
     run_all_tests()
+
