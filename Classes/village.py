@@ -128,8 +128,9 @@ class Village(base_squares.Square):
                 if next_entry is None:
                     continue
                 pop_delta = next_entry[2] - current_entry[2]
-                if pop_delta >= crop_yield_per_hour:
-                    continue
+                if key2 != 'Crop':
+                    if crop_yield_per_hour <= 0 or pop_delta >= crop_yield_per_hour:
+                        continue
                 upgrade_cost = f_data.field_dict[key2][holdval_level][0]
                 enough_res = True
                 for i in range(4):

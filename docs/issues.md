@@ -31,7 +31,7 @@
 - **ISS-017** — `simulation_runner/game_state_progression.py`: `check_passive` relies on `next_update()` returning `True` to mean “no event”; clarify the contract and swap to `None`/numeric values so the scheduler stays well-typed.
 - **ISS-018** — `simulation_runner/game_state_progression.py`: Global state (`game_counter`, `time_will_elapse`, `global_last_active`) is mutated via module-level globals; encapsulate in a Kernel/GameState object and pass dependencies explicitly.
 - **ISS-019** — `simulation_runner/game_state_progression.py`: Fallback `min_elapsed = 1` advances time even when no actors are pending; replace with a heartbeat event or guard to detect stalled simulations instead of silently ticking.
-- **ISS-020** — `simulation_runner/game_state_progression.py`: No logging/metrics around tick decisions. Add structured logging once the kernel is formalised.
+- **ISS-020** - `simulation_runner/game_state_progression.py`: No logging/metrics around tick decisions. Add structured logging once the kernel is formalised.
 - **ISS-021** (resolved 2025-10-28) - `simulation_runner/run_logger.py`: Resource snapshot logging is blocked by the current "wake implies completion" assumption; revisit once upgrade completion events are explicit.
 
 ## 2025-10-28 09:15:00
@@ -80,3 +80,7 @@ ext_update returns None pending future interaction logic.
 
 - **ISS-022** resolved - run_logger now produces per-player scoreboards in simulation_logs/scoreboards.
 
+## 2025-11-01 10:12:00
+
+- **ISS-008** (resolved 2025-11-01) - `Classes/village.py`: Completion handlers now remove only the finished job from a structured queue, enabling multi-slot upgrade logic.
+- **ISS-015** (resolved 2025-11-01) - `Classes/AI_Classes/generic_running_mechanism.py`: Controller now operates on structured job records and handles multiple queued upgrades without brittle list indexing.
