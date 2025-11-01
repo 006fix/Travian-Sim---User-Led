@@ -21,6 +21,11 @@ class Village(base_squares.Square):
         self.buildings[1] = ['warehouse', 0, True]
         self.buildings[2] = ['granary', 0, True]
 
+        self.available_buildings = set(b_data.building_dict.keys())
+        for slot_info in self.buildings.values():
+            if isinstance(slot_info, list) and len(slot_info) > 0:
+                self.available_buildings.discard(slot_info[0])
+
         #default instantiation values
         self.storage_cap = [800, 800, 800, 800]
         self.stored = [800,800,800,800]
@@ -71,10 +76,36 @@ class Village(base_squares.Square):
             if 'Crop' in key3:
                 crop_yield += field_obj.field_yield
 
+        wood_bonus = 0.0
+        clay_bonus = 0.0
+        iron_bonus = 0.0
+        crop_bonus = 0.0
+        for building in self.buildings.values():
+            if not building or len(building) <= 1:
+                continue
+            name, level, _ = building
+            if name in ('sawmill', 'brickyard', 'iron_foundry', 'grain_mill', 'bakery'):
+                entry = b_data.building_dict.get(name, {}).get(level)
+                if entry is None:
+                    continue
+                bonus = entry[4] or 0.0
+                if name == 'sawmill':
+                    wood_bonus += bonus
+                elif name == 'brickyard':
+                    clay_bonus += bonus
+                elif name == 'iron_foundry':
+                    iron_bonus += bonus
+                else:
+                    crop_bonus += bonus
+
+        wood_yield *= (1.0 + wood_bonus)
+        clay_yield *= (1.0 + clay_bonus)
+        iron_yield *= (1.0 + iron_bonus)
+        crop_yield *= (1.0 + crop_bonus)
+
         wood_yield = wood_yield / 3600
         clay_yield = clay_yield / 3600
         iron_yield = iron_yield / 3600
-        #population is per person crop consumption per hour
         net_crop = crop_yield - self.population
         crop_yield = net_crop / 3600
 
@@ -118,6 +149,24 @@ class Village(base_squares.Square):
                         }
                         dictval = possible_buildings['buildings']
                         dictval.append(final_value)
+        empty_slots = [slot for slot, value in self.buildings.items() if not value]  # [ISS-023] allow maxed storage buildings to bypass this guard later
+        if empty_slots and self.available_buildings:
+            for slot in empty_slots:
+                for building_name in sorted(self.available_buildings):
+                    level_data = b_data.building_dict.get(building_name, {}).get(1)
+                    if level_data is None:
+                        continue
+                    upgrade_cost = level_data[0]
+                    if all(self.stored[i] >= upgrade_cost[i] for i in range(4)):
+                        possible_buildings['buildings'].append(
+                            {
+                                'type': 'building',
+                                'slot': slot,
+                                'name': building_name,
+                                'level': 0,
+                                'new_build': True,
+                            }
+                        )
         for key in self.fields:
             holdval = self.fields[key]
             holdval_level = holdval.level
@@ -148,35 +197,39 @@ class Village(base_squares.Square):
         return possible_buildings   
     
     def upgrade_building(self, upgrade_target):
-        #built and designed for the 2 key building logic in possible_buildings
         building_dict_key = upgrade_target[0]
         building_data_key = upgrade_target[1]
         relevant_target = self.buildings[building_dict_key]
-        current_level = relevant_target[1]
-        upgradeable_check = relevant_target[2]
-        #this is fine for now, and should never trigger. But it is crude.
-        #Issue - this is a case where we need better logging functionality.
-        if upgradeable_check != True:
-            raise ValueError ("You appear to have attempted to upgrade a building that cannot be upgraded :(")
+        is_new_build = not relevant_target
+        if is_new_build:
+            current_level = 0
+            upgradeable_check = True
+        else:
+            current_level = relevant_target[1]
+            upgradeable_check = relevant_target[2]
+        if upgradeable_check is not True:
+            raise ValueError("You appear to have attempted to upgrade a building that cannot be upgraded :(")
         entry, _ = self._get_building_entry(building_data_key, current_level)
         if entry is None:
-            raise ValueError(f"Building data missing for {building_data_key} at level {current_level}")
-        upgrade_cost = entry[0]
+            next_entry, _ = self._get_building_entry(building_data_key, current_level + 1)
+            if next_entry is None:
+                raise ValueError(f"Building data missing for {building_data_key} at level {current_level + 1}")
+            upgrade_cost = next_entry[0]
+            upgrade_time = next_entry[3]
+        else:
+            upgrade_cost = entry[0]
+            upgrade_time = entry[3]
 
-        #get upgrade time for the building
-        upgrade_time = entry[3]
         speed_modifier = self._main_building_speed_modifier()
         true_upgrade_time = gen_func.sec_val(upgrade_time)
         true_upgrade_time = max(1, int(round(true_upgrade_time * speed_modifier)))
 
-        #subtract the cost of the ugprade from the village
-        hold_vals = self.stored
-        for i in range(len(hold_vals)):
-            hold_vals[i] -= upgrade_cost[i]
-        self.stored = hold_vals
-        
-        #removed a section on upgrading the level of items already here, and shifted it to
-        #post build completion in new function
+        for i in range(4):
+            self.stored[i] -= upgrade_cost[i]
+
+        if is_new_build:
+            self.buildings[building_dict_key] = [building_data_key, 0, True]
+            self.available_buildings.discard(building_data_key)
 
         sleep_duration = true_upgrade_time
         job_payload = {
@@ -247,7 +300,7 @@ class Village(base_squares.Square):
         level_plusone = current_level + 1
         old_entry, _ = self._get_building_entry(building_data_key, current_level)
         if old_entry is None:
-            raise ValueError(f"Building data missing for {building_data_key} at level {current_level}")
+            old_entry = [[0, 0, 0, 0], 0, 0, [0, 0, 0], 0]
         new_entry, upgrade_possible = self._get_building_entry(building_data_key, level_plusone)
         if new_entry is None:
             raise ValueError(f"Building data missing for {building_data_key} at level {level_plusone}")

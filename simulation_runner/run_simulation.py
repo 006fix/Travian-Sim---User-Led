@@ -104,7 +104,7 @@ def run_simulation(num_ticks, num_players, base_random_seed, map_radius):
 
 if __name__ == "__main__":
     run_simulation(
-        num_ticks=2500,
+        num_ticks=4000,
         num_players=40,
         base_random_seed=42,
         map_radius=50,
