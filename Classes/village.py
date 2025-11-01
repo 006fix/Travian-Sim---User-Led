@@ -4,6 +4,8 @@ import Base_Data.Fields_Data as f_data
 import Generic_Functions.generic_functions as gen_func
 import random
 
+from master_controller import game_rules
+
 class Village(base_squares.Square):
     def __init__(self, location, type_hab, field_list_dict, owner, type_square='village'):
         super().__init__(location)
@@ -239,6 +241,41 @@ class Village(base_squares.Square):
         }
         self._register_upgrade_job('building', job_payload, sleep_duration)
         return sleep_duration
+
+    def _residence_level(self):
+        for data in self.buildings.values():
+            if data and len(data) > 1 and data[0] == 'residence':
+                return data[1]
+        return 0
+
+    def start_train_settler(self):
+        if self._residence_level() < 10:
+            raise ValueError("Residence level 10 required to train settlers.")
+        cost = game_rules.SETTLER_COST
+        if any(self.stored[i] < cost[i] for i in range(4)):
+            return None
+        for i in range(4):
+            self.stored[i] -= cost[i]
+        duration = gen_func.sec_val(game_rules.SETTLER_TIME)
+        payload = {'village': getattr(self, "location", None)}
+        self._register_upgrade_job('train_settler', payload, duration)
+        return duration
+
+    def start_settle(self):
+        owner = getattr(self, "owner", None)
+        if owner is None or getattr(owner, "settlers_built", 0) < 3:
+            return None
+        if owner.culture_points < game_rules.CP_THRESHOLD:
+            return None
+        cost = game_rules.SETTLE_COST
+        if any(self.stored[i] < cost[i] for i in range(4)):
+            return None
+        for i in range(4):
+            self.stored[i] -= cost[i]
+        duration = gen_func.sec_val(game_rules.SETTLE_TIME)
+        payload = {'village': getattr(self, "location", None)}
+        self._register_upgrade_job('settle', payload, duration)
+        return duration
     
     def upgrade_field(self, upgrade_target):
 

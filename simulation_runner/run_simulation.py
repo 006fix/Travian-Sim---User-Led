@@ -8,6 +8,7 @@ if __package__ in (None, ""):
 #print(sys.path[0])
 
 from master_controller.simulation_constraints import create_simulation_constraints
+from master_controller import game_rules
 from Specific_Functions.map_creation import map_creation, modify_base_map
 from Specific_Functions.populate_players import populate_players_with_villages
 from simulation_runner import game_state_progression as progress_state
@@ -36,6 +37,10 @@ def _execute_simulation(num_ticks, num_players, base_random_seed, map_radius, la
     base_map = map_creation(radius)
     base_map = modify_base_map(base_map)
     player_dict = populate_players_with_villages(base_map, players)
+    run_context = {
+        "global_settles_completed": 0,
+        "settle_goal": game_rules.target_settles(players),
+    }
 
     _reset_progress_state()
     periodic_monitor.reset(
@@ -55,6 +60,12 @@ def _execute_simulation(num_ticks, num_players, base_random_seed, map_radius, la
             "rng_seed": base_random_seed,
             "planned_ticks": num_ticks,
             "run_variant": label,
+            "settle_goal": run_context["settle_goal"],
+            "settler_cost": game_rules.SETTLER_COST,
+            "settler_time": game_rules.SETTLER_TIME,
+            "settle_cost": game_rules.SETTLE_COST,
+            "settle_time": game_rules.SETTLE_TIME,
+            "cp_settlement_threshold": game_rules.CP_THRESHOLD,
         }
     )
 
@@ -69,6 +80,8 @@ def _execute_simulation(num_ticks, num_players, base_random_seed, map_radius, la
             "ticks": final_ticks,
             "final_game_time": final_time,
             "run_variant": label,
+            "settle_points": {player.name: player.settle_points for player in player_dict.values()},
+            "global_settles_completed": run_context["global_settles_completed"],
         }
     )
     run_id = log_output.get("metadata", {}).get("run_id", "unknown")

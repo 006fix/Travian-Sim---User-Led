@@ -44,4 +44,6 @@ def build_info_packet(player, village, game_time, global_last_active):
         "village": village,
         "game_time": game_time,
         "global_last_active": global_last_active,
+        "settlers_built": getattr(player, "settlers_built", 0),
+        "settle_points": getattr(player, "settle_points", 0),
     }

@@ -116,6 +116,20 @@ sawmill_dict = {
     5: [[5460, 3990, 3045, 945], 2, 2, [6, 55, 40], 0.25],
 }
 
+#final item here is defence#
+residence_dict = {
+    1: [[580, 460, 350, 180], 2, 1, [0, 33, 20], 2.0],
+    2: [[740, 590, 450, 230], 3, 1, [0, 43, 40], 8.0],
+    3: [[950, 755, 575, 295], 3, 1, [0, 55, 40], 18.0],
+    4: [[1215, 965, 735, 375], 4, 1, [1, 9, 30], 32.0],
+    5: [[1555, 1235, 940, 485], 5, 1, [1, 25, 40], 50.0],
+    6: [[1995, 1580, 1205, 620], 6, 1, [1, 44, 20], 72.0],
+    7: [[2550, 2025, 1540, 790], 7, 1, [2, 6, 10], 98.0],
+    8: [[3265, 2590, 1970, 1015], 9, 1, [2, 31, 20], 128.0],
+    9: [[4180, 3315, 2520, 1295], 10, 1, [3, 0, 30], 162.0],
+    10: [[5350, 4245, 3230, 1660], 12, 1, [3, 34, 20], 200.0],
+}
+
 
 ###############
 #COMBINED_DICT#
@@ -123,4 +137,4 @@ sawmill_dict = {
 
 building_dict = {'warehouse': warehouse_dict, 'granary': granary_dict, 'main_building': main_building_dict,
                  'bakery' : bakery_dict, 'brickyard' : brickyard_dict, 'grain_mill' : grain_mill_dict,
-                 'iron_foundry' : iron_foundry_dict, 'sawmill' : sawmill_dict}
+                 'iron_foundry' : iron_foundry_dict, 'sawmill' : sawmill_dict, 'residence' : residence_dict}

@@ -20,6 +20,9 @@ class Player:
 
         self.next_action_due_at = 0
 
+        self.settlers_built = 0
+        self.settle_points = 0
+
     def next_update(self):
         # [ISS-004] placeholder scheduling logic; replace when proper event handling is built.
         return self.next_action_due_at

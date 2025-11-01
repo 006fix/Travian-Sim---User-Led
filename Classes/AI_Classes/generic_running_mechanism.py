@@ -3,6 +3,7 @@ import random
 import Classes.player as player
 from simulation_runner import run_logger
 from Classes.AI_Classes.generic_ai_base import GenericAIBase, build_info_packet
+from master_controller import game_rules
 
 
 class base_controller(player.Player):
@@ -39,12 +40,78 @@ class base_controller(player.Player):
         self.next_action_due_at = 0
         self.ai_label = getattr(self.ai_controller, "name", "Generic Random")
 
+    def _count_jobs(self, job_type):
+        """Count outstanding jobs of a given type across all villages."""
+        total = 0
+        for village in self.villages:
+            for job in getattr(village, "currently_upgrading", {}).values():
+                if job.get("type") == job_type:
+                    total += 1
+        return total
+
+    def _log_action_event(self, village, action_type, target_repr, wait_time, reason=None):
+        """Common logger wrapper for controller-initiated actions."""
+        run_logger.log_action(
+            player=self.name,
+            village_location=getattr(village, "location", None),
+            action_type=action_type,
+            target=target_repr,
+            wait_time=wait_time,
+            reason=reason,
+            population=village.population,
+            culture_rate=village.culture_points_rate,
+            culture_total=village.culture_points_total,
+            total_yield=village.total_yield,
+            ai_label=self.ai_label,
+        )
+
+    def _try_priority_settler_action(self, village, wait_time_list):
+        """Apply the controller-level settler/settle heuristic."""
+        policy = getattr(game_rules, "SETTLER_POLICY", {})
+        if not policy.get("prioritise_settle", True):
+            return False
+
+        target_settlers = int(policy.get("train_target", 3))
+        required_residence = int(policy.get("residence_level_required", 10))
+
+        pending_trainers = self._count_jobs("train_settler")
+        built_settlers = getattr(self, "settlers_built", 0)
+        residence_level = 0
+        if hasattr(village, "_residence_level"):
+            residence_level = village._residence_level()
+
+        if (built_settlers + pending_trainers) < target_settlers and residence_level >= required_residence:
+            wait_time = village.start_train_settler()
+            if wait_time:
+                self._log_action_event(village, "train_settler", "train_settler", wait_time)
+                next_wait = village.next_upgrade_completion()
+                if next_wait is not None:
+                    wait_time_list.append(next_wait)
+                return True
+
+        if built_settlers < target_settlers:
+            return False
+
+        if self._count_jobs("settle") > 0:
+            return False
+
+        wait_time = village.start_settle()
+        if wait_time:
+            self._log_action_event(village, "settle", "settle", wait_time)
+            next_wait = village.next_upgrade_completion()
+            if next_wait is not None:
+                wait_time_list.append(next_wait)
+            return True
+
+        return False
+
     def reset_next_action(self, current_time, wait_duration):
         if wait_duration is not None:
             self.next_action_due_at = current_time + wait_duration
         else:
             #issue - this is hardcoded into the AI as a "wait 20k seconds" element - should be dynamic and
             #controlled at a high level
+            # [ISS-033] Align idle wake-ups with periodic_monitor cadence once controller scheduling is refactored.
             self.next_action_due_at = current_time + 20000
         #issue - this function doesn't return anything, but it should absolutely log stuff
 
@@ -110,13 +177,54 @@ class base_controller(player.Player):
                         storage_cap=curr_village.storage_cap.copy(),
                         ai_label=self.ai_label,
                     )
+                elif job_type == "train_settler":
+                    owner = getattr(curr_village, "owner", None)
+                    if owner is not None:
+                        owner.settlers_built += 1
+                    run_logger.log_completion(
+                        player=self.name,
+                        village_location=location,
+                        job_type="train_settler",
+                        target="train_settler",
+                        population=curr_village.population,
+                        culture_rate=curr_village.culture_points_rate,
+                        culture_total=curr_village.culture_points_total,
+                        total_yield=curr_village.total_yield,
+                        resources=curr_village.stored.copy(),
+                        storage_cap=curr_village.storage_cap.copy(),
+                        ai_label=self.ai_label,
+                    )
+                    curr_village.remove_upgrade_job(job.get("id"))
+                elif job_type == "settle":
+                    owner = getattr(curr_village, "owner", None)
+                    if owner is not None and owner.settlers_built >= 3:
+                        owner.settlers_built -= 3
+                        owner.settle_points += 1
+                    # [ISS-032] Settlements should refund the population (crop usage) from the departing settlers.
+                    run_logger.log_completion(
+                        player=self.name,
+                        village_location=location,
+                        job_type="settle",
+                        target="settle",
+                        population=curr_village.population,
+                        culture_rate=curr_village.culture_points_rate,
+                        culture_total=curr_village.culture_points_total,
+                        total_yield=curr_village.total_yield,
+                        resources=curr_village.stored.copy(),
+                        storage_cap=curr_village.storage_cap.copy(),
+                        ai_label=self.ai_label,
+                    )
+                    curr_village.remove_upgrade_job(job.get("id"))
                 else:
                     curr_village.remove_upgrade_job(job.get("id"))
 
+            priority_scheduled = self._try_priority_settler_action(curr_village, wait_time_list)
+            if priority_scheduled:
+                reset_time = True
+                continue
+
             possible_actions = curr_village.possible_buildings()
-            merged_list = [
-                item for subset in possible_actions.values() for item in subset
-            ]
+            merged_list = [item for subset in possible_actions.values() for item in subset]
 
             if self.ai_controller is None:
                 if merged_list:
@@ -139,26 +247,18 @@ class base_controller(player.Player):
                     chosen_item = None
 
             if chosen_item is None:
-                run_logger.log_action(
-                    player=self.name,
-                    village_location=getattr(curr_village, "location", None),
-                    action_type="idle",
-                    target=None,
-                    wait_time=None,
+                self._log_action_event(
+                    curr_village,
+                    "idle",
+                    None,
+                    None,
                     reason="no available upgrades",
-                    population=curr_village.population,
-                    culture_rate=curr_village.culture_points_rate,
-                    culture_total=curr_village.culture_points_total,
-                    total_yield=curr_village.total_yield,
-                    ai_label=self.ai_label,
                 )
             else:
                 reset_time = True
                 item_type = chosen_item.get("type")
                 if item_type == "building":
-                    wait_time = curr_village.upgrade_building(
-                        [chosen_item["slot"], chosen_item["name"]]
-                    )
+                    wait_time = curr_village.upgrade_building([chosen_item["slot"], chosen_item["name"]])
                     target_repr = chosen_item["name"]
                     action_label = "upgrade_building"
                 elif item_type == "field":
@@ -170,18 +270,7 @@ class base_controller(player.Player):
                     wait_time = None
                     target_repr = None
                     action_label = "unknown"
-                run_logger.log_action(
-                    player=self.name,
-                    village_location=getattr(curr_village, "location", None),
-                    action_type=action_label,
-                    target=target_repr,
-                    wait_time=wait_time,
-                    population=curr_village.population,
-                    culture_rate=curr_village.culture_points_rate,
-                    culture_total=curr_village.culture_points_total,
-                    total_yield=curr_village.total_yield,
-                    ai_label=self.ai_label,
-                )
+                self._log_action_event(curr_village, action_label, target_repr, wait_time)
 
             next_wait = curr_village.next_upgrade_completion()
             if next_wait is not None:

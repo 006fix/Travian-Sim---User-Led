@@ -2,13 +2,13 @@
 
 ## 2025-10-21 13:17:02
 
-- **ISS-001** — `Specific_Functions/map_creation.py`: Coordinate string format (`locval = [x,"/",y]`) may break downstream consumers that expect numeric pairs. Evaluate representation and adjust callers accordingly.
+- **ISS-001**  `Specific_Functions/map_creation.py`: Coordinate string format (`locval = [x,"/",y]`) may break downstream consumers that expect numeric pairs. Evaluate representation and adjust callers accordingly.
 - **ISS-002** (resolved 2025-10-28) - `Classes/habitable.py`: `next_update` uses placeholder sleep handling and should be replaced with a proper interaction model.
 - **ISS-003** (resolved 2025-10-28) - `Classes/oasis.py`: `next_update` placeholder keeps oases non-interactable; needs a cleaner mechanism.
 
 ## 2025-10-21 16:11:53
 
-- **ISS-004** — `Classes/player.py`: `next_update` still relies on the temporary boolean sentinel approach; replace with real scheduling logic to align with the eventual event loop.
+- **ISS-004**  `Classes/player.py`: `next_update` still relies on the temporary boolean sentinel approach; replace with real scheduling logic to align with the eventual event loop.
 
 ## 2025-10-25 09:44:10
 
@@ -18,19 +18,19 @@
 ## 2025-10-25 14:24:49
 
 - **ISS-007** (resolved 2025-10-28) - `Classes/village.py`: `upgrade_building` and `upgrade_field` still ignore main-building speed modifiers when converting build times; the duration helper needs to incorporate the main-building level to match Travian timing.
-- **ISS-008** — `Classes/village.py`: Completion handlers (`building_upgraded`, `field_upgraded`) clear `currently_upgrading` wholesale. Replace with removal of just the finished job so Romans (or future multi-queue logic) can upgrade in parallel.
-- **ISS-009** — `Classes/village.py`: `building_upgraded` relies on the `[False]` sentinel in `b_data.building_dict` to detect terminal levels; add explicit guards or helper accessors so missing entries don’t raise unexpectedly.
+- **ISS-008**  `Classes/village.py`: Completion handlers (`building_upgraded`, `field_upgraded`) clear `currently_upgrading` wholesale. Replace with removal of just the finished job so Romans (or future multi-queue logic) can upgrade in parallel.
+- **ISS-009**  `Classes/village.py`: `building_upgraded` relies on the `[False]` sentinel in `b_data.building_dict` to detect terminal levels; add explicit guards or helper accessors so missing entries dont raise unexpectedly.
 
 ## 2025-10-26 12:05:00
 
-- **ISS-015** — `Classes/AI_Classes/generic_running_mechanism.py`: Completion logic drops the first queued job but still relies on nested lists and manual length checks. Replace with a structured job record to avoid brittle indexing when Romans/multi-queue support lands.
+- **ISS-015**  `Classes/AI_Classes/generic_running_mechanism.py`: Completion logic drops the first queued job but still relies on nested lists and manual length checks. Replace with a structured job record to avoid brittle indexing when Romans/multi-queue support lands.
 
 ## 2025-10-27 08:27:52
 
-- **ISS-016** — `simulation_runner/game_state_progression.py`: `set_time_elapsed` writes a string sentinel into `time_will_elapse`; replace with a numeric default or queue-driven scheduler to avoid type churn.
-- **ISS-017** — `simulation_runner/game_state_progression.py`: `check_passive` relies on `next_update()` returning `True` to mean “no event”; clarify the contract and swap to `None`/numeric values so the scheduler stays well-typed.
-- **ISS-018** — `simulation_runner/game_state_progression.py`: Global state (`game_counter`, `time_will_elapse`, `global_last_active`) is mutated via module-level globals; encapsulate in a Kernel/GameState object and pass dependencies explicitly.
-- **ISS-019** — `simulation_runner/game_state_progression.py`: Fallback `min_elapsed = 1` advances time even when no actors are pending; replace with a heartbeat event or guard to detect stalled simulations instead of silently ticking.
+- **ISS-016**  `simulation_runner/game_state_progression.py`: `set_time_elapsed` writes a string sentinel into `time_will_elapse`; replace with a numeric default or queue-driven scheduler to avoid type churn.
+- **ISS-017**  `simulation_runner/game_state_progression.py`: `check_passive` relies on `next_update()` returning `True` to mean no event; clarify the contract and swap to `None`/numeric values so the scheduler stays well-typed.
+- **ISS-018**  `simulation_runner/game_state_progression.py`: Global state (`game_counter`, `time_will_elapse`, `global_last_active`) is mutated via module-level globals; encapsulate in a Kernel/GameState object and pass dependencies explicitly.
+- **ISS-019**  `simulation_runner/game_state_progression.py`: Fallback `min_elapsed = 1` advances time even when no actors are pending; replace with a heartbeat event or guard to detect stalled simulations instead of silently ticking.
 - **ISS-020** - `simulation_runner/game_state_progression.py`: No logging/metrics around tick decisions. Add structured logging once the kernel is formalised.
 - **ISS-021** (resolved 2025-10-28) - `simulation_runner/run_logger.py`: Resource snapshot logging is blocked by the current "wake implies completion" assumption; revisit once upgrade completion events are explicit.
 
@@ -89,4 +89,22 @@ ext_update returns None pending future interaction logic.
 
 - **ISS-023** - Classes/village.py: Empty-slot building logic should eventually permit rebuilding Warehouses/Granaries after they reach level 20; revisit when storage rules are expanded.
 
+## 2025-11-01 14:05:00
+
+- **ISS-024** - master_controller/game_rules.py: Settler resource cost should vary by tribe once race mechanics are introduced.
+- **ISS-025** - master_controller/game_rules.py: Settler training duration should scale with Residence/Palace level instead of using a flat value.
+- **ISS-026** - master_controller/game_rules.py: Settlement CP threshold should increase with the player's village count.
+- **ISS-027** - Base_Data/Building_Data.py: Residence progression should extend to level 20 to match Travian limits.
+- **ISS-028** - Classes/village.py: Residence should unlock additional settler capacity (e.g., at level 20).
+- **ISS-029** - Classes/village.py: Palace buildings should be treated as an alternative prerequisite for settlers.
+
+## 2025-11-01 16:20:00
+
+- **ISS-030** - Classes/village.py: Settler training currently reuses the general building queue; residence (or palace) should host a dedicated training timer so the job no longer blocks the shared upgrade pipeline.
+- **ISS-031** - Classes/AI_Classes/generic_running_mechanism.py: Controller-level settler priority forces every AI down the same path; advanced agents should be able to bypass or override this heuristic once smarter policies exist.
+
+## 2025-11-01 16:45:00
+
+- **ISS-032** - Classes/AI_Classes/generic_running_mechanism.py: Settler completions should refund the population/crop consumption that the trained settlers were using; settling currently leaves villages permanently short by the three population consumed.
+- **ISS-033** - Classes/AI_Classes/generic_running_mechanism.py: The idle fallback still sleeps for 20,000 seconds; revise to wake on the next periodic monitor tick (15-minute cadence) once the controller scheduling hook is ready.
 
