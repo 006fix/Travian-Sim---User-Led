@@ -249,13 +249,19 @@ def test_base_controller_triggers_field_upgrade() -> Tuple[bool, str]:
     wait_time = controller.will_i_act(current_time=10, global_last_active=0)
     if wait_time != expected_wait or controller.next_action_due_at != 10 + expected_wait:
         return False, f"Expected wait {expected_wait}, saw {wait_time} and due_at {controller.next_action_due_at}"
-    if village_obj.currently_upgrading != [[field_id]]:
+    if len(village_obj.currently_upgrading) != 1:
         return False, f"Upgrade queue unexpected: {village_obj.currently_upgrading}"
+    job = next(iter(village_obj.currently_upgrading.values()))
+    payload = job.get("payload", {})
+    if payload.get("field_id") != field_id:
+        return False, f"Queued field mismatch: {payload}"
+    if job.get("time_remaining") != expected_wait:
+        return False, f"Job timer mismatch: expected {expected_wait}, saw {job.get('time_remaining')}"
     for idx in range(4):
         if village_obj.stored[idx] != initial_stock[idx] - upgrade_cost[idx]:
             return False, "Upgrade cost was not deducted correctly."
 
-    village_obj.field_upgraded(field_id)
+    village_obj.field_upgraded(job)
     new_level = current_level + 1
     expected_pop_delta = f_data.field_dict[field_prefix][new_level][2] - f_data.field_dict[field_prefix][current_level][2]
     expected_cp_delta = f_data.field_dict[field_prefix][new_level][1] - f_data.field_dict[field_prefix][current_level][1]
@@ -267,7 +273,7 @@ def test_base_controller_triggers_field_upgrade() -> Tuple[bool, str]:
     expected_total_yield = yield_before + expected_yield_delta - expected_pop_delta
     if abs(village_obj.total_yield - expected_total_yield) > 1e-6:
         return False, "Total yield did not update to match the new field level."
-    if village_obj.currently_upgrading != []:
+    if village_obj.currently_upgrading != {}:
         return False, "Upgrade queue was not cleared after completion."
     return True, "Controller triggers field upgrade and schedules next wake correctly."
 
@@ -527,16 +533,22 @@ def test_building_upgrade_handles_max_level() -> Tuple[bool, str]:
     controller = next(iter(players.values()))
     village_obj = controller.villages[0]
 
-    job = [0, "main_building"]
+    job_spec = [0, "main_building"]
     village_obj.buildings[0][1] = 19
     village_obj.buildings[0][2] = True
     village_obj.stored = [1_000_000, 1_000_000, 1_000_000, 1_000_000]
 
-    wait_time = village_obj.upgrade_building(job)
+    wait_time = village_obj.upgrade_building(job_spec)
     if wait_time <= 0:
         return False, "Expected positive wait time for main building upgrade."
 
-    village_obj.currently_upgrading.append(job)
+    if len(village_obj.currently_upgrading) != 1:
+        return False, "Building upgrade did not enter the queue."
+    job = next(iter(village_obj.currently_upgrading.values()))
+    payload = job.get("payload", {})
+    if payload.get("slot") != 0 or payload.get("building") != "main_building":
+        return False, f"Unexpected job payload recorded: {payload}"
+
     village_obj.building_upgraded(job)
 
     if village_obj.buildings[0][1] != 20:

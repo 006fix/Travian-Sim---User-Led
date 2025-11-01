@@ -24,7 +24,8 @@ class Village(base_squares.Square):
         #default instantiation values
         self.storage_cap = [800, 800, 800, 800]
         self.stored = [800,800,800,800]
-        self.currently_upgrading = []
+        self.currently_upgrading = {}
+        self._upgrade_job_sequence = 0
         self.population = 0
         self.culture_points_rate = 0.0
         self.culture_points_total = 0.0
@@ -84,6 +85,7 @@ class Village(base_squares.Square):
     def possible_buildings(self):
         #modified to dictionary variant to store both in one item
         possible_buildings = {'buildings': [], 'fields': []}
+        crop_yield_per_hour = self.yield_calc()[3] * 3600
         for key in self.buildings:
             holdval = self.buildings[key]
             #if buildings exist that can be built
@@ -94,6 +96,12 @@ class Village(base_squares.Square):
                     keyval = holdval[0]
                     entry, upgradeable = self._get_building_entry(keyval, holdval_level)
                     if entry is None or upgradeable is False:
+                        continue
+                    next_entry, _ = self._get_building_entry(keyval, holdval_level + 1)
+                    if next_entry is None:
+                        continue
+                    pop_delta = next_entry[2] - entry[2]
+                    if crop_yield_per_hour <= 0 or pop_delta >= crop_yield_per_hour:
                         continue
                     upgrade_cost = entry[0]
                     #default to assuming enough res, then make false if not true
@@ -163,6 +171,12 @@ class Village(base_squares.Square):
         #post build completion in new function
 
         sleep_duration = true_upgrade_time
+        job_payload = {
+            'slot': building_dict_key,
+            'building': building_data_key,
+            'target_level': current_level + 1,
+        }
+        self._register_upgrade_job('building', job_payload, sleep_duration)
         return sleep_duration
     
     def upgrade_field(self, upgrade_target):
@@ -191,18 +205,30 @@ class Village(base_squares.Square):
         for i in range(len(hold_vals)):
             hold_vals[i] -= upgrade_cost[i]
         self.stored = hold_vals
-        self.currently_upgrading.append([upgrade_target])
 
         sleep_duration = true_upgrade_time
+        job_payload = {
+            'field_id': upgrade_target,
+            'resource_type': field_dict_key,
+            'target_level': current_level + 1,
+        }
+        self._register_upgrade_job('field', job_payload, sleep_duration)
         return sleep_duration
 
 
-    def building_upgraded(self, upgrade_target):
+    def building_upgraded(self, job):
+
+        if not isinstance(job, dict):
+            raise TypeError("building_upgraded expects a job dictionary payload")
+
+        payload = job.get('payload', {})
+        building_dict_key = payload.get('slot')
+        building_data_key = payload.get('building')
+        if building_dict_key is None or building_data_key is None:
+            raise ValueError("Incomplete job payload for building upgrade completion")
 
         #same start code as above
         #built and designed for the 2 key building logic in possible_buildings
-        building_dict_key = upgrade_target[0]
-        building_data_key = upgrade_target[1]
         relevant_target = self.buildings[building_dict_key]
         current_level = relevant_target[1]
         upgradeable_check = relevant_target[2]
@@ -230,14 +256,20 @@ class Village(base_squares.Square):
         #buildings do not directly add yield in the current dataset, so only the population delta applies
         self.total_yield -= pop_delta
 
-        #null list to signify nothing upgrading.
-        # [ISS-008] ISSUE : THIS WILL NEED TO BE CHANGED TO BE A SIMPLE REMOVAL OF THE 0TH INDEX
-        #to allow for the roman race to be implemented
-        self.currently_upgrading = []
+        #remove only the completed job
+        self.remove_upgrade_job(job.get('id'))
 
         #nothing returned, merely modifies values in place
     
-    def field_upgraded(self, upgrade_target):
+    def field_upgraded(self, job):
+
+        if not isinstance(job, dict):
+            raise TypeError("field_upgraded expects a job dictionary payload")
+
+        payload = job.get('payload', {})
+        upgrade_target = payload.get('field_id')
+        if upgrade_target is None:
+            raise ValueError("Incomplete job payload for field upgrade completion")
 
         field_data = self.fields[upgrade_target]
         field_dict_key = upgrade_target[:4]
@@ -264,10 +296,8 @@ class Village(base_squares.Square):
         self.culture_points_rate += new_entry[1] - old_entry[1]
         self.total_yield += yield_delta - pop_delta
 
-        #null list to signify nothing upgrading.
-        # [ISS-008] ISSUE : THIS WILL NEED TO BE CHANGED TO BE A SIMPLE REMOVAL OF THE 0TH INDEX
-        #to allow for the roman race to be implemented
-        self.currently_upgrading = []
+        #remove only the completed job
+        self.remove_upgrade_job(job.get('id'))
 
         #nothing returned, merely modifies values in place
 
@@ -319,3 +349,63 @@ class Village(base_squares.Square):
         if not isinstance(cost, (list, tuple)) or len(cost) == 0 or cost[0] is False:
             upgradeable = False
         return entry, upgradeable
+
+    def _register_upgrade_job(self, job_type, payload, duration):
+        """Add a new job to the upgrade queue."""
+        self._upgrade_job_sequence += 1
+        job_id = self._upgrade_job_sequence
+        job = {
+            'id': job_id,
+            'type': job_type,
+            'payload': payload,
+            'time_remaining': int(duration),
+            'initial_duration': int(duration),
+        }
+        self.currently_upgrading[job_id] = job
+        return job
+
+    def advance_upgrade_jobs(self, elapsed):
+        """Reduce remaining time on all jobs and return any that completed."""
+        if elapsed <= 0 or not self.currently_upgrading:
+            return []
+        completed = []
+        for job in list(self.currently_upgrading.values()):
+            remaining = job.get('time_remaining', 0)
+            updated = max(0, int(round(remaining - elapsed)))
+            job['time_remaining'] = updated
+            if updated <= 0:
+                completed.append(job)
+        return completed
+
+    def describe_job(self, job):
+        """Return a human-readable label for logging purposes."""
+        if not isinstance(job, dict):
+            return str(job)
+        job_type = job.get('type')
+        payload = job.get('payload', {})
+        if job_type == 'building':
+            slot = payload.get('slot')
+            name = payload.get('building')
+            target_level = payload.get('target_level')
+            if slot is not None and name is not None:
+                return f"{name}@{slot} -> {target_level}"
+            return name or f"building_slot_{slot}"
+        if job_type == 'field':
+            field_id = payload.get('field_id')
+            target_level = payload.get('target_level')
+            if field_id is not None:
+                return f"{field_id} -> {target_level}"
+        return "unknown_job"
+
+    def remove_upgrade_job(self, job_id):
+        """Remove a job from the queue if it exists."""
+        self.currently_upgrading.pop(job_id, None)
+
+    def next_upgrade_completion(self):
+        """Return the smallest positive time remaining among queued jobs."""
+        if not self.currently_upgrading:
+            return None
+        remaining_times = [job['time_remaining'] for job in self.currently_upgrading.values() if job['time_remaining'] > 0]
+        if not remaining_times:
+            return 0
+        return min(remaining_times)

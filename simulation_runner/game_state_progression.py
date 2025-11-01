@@ -15,6 +15,7 @@ time_will_elapse = 0
 global_last_active = 0
 
 from simulation_runner import run_logger
+from simulation_runner import periodic_monitor
 
 def set_time_elapsed():
     global time_elapsed
@@ -70,9 +71,13 @@ def simulate_time(map_dict, player_dict):
     # [ISS-020] add heartbeat / logging once scheduler formalised.
     passive_actions = check_passive(map_dict)
     player_actions = check_players(player_dict)
+    periodic_monitor.maybe_capture(game_counter, player_dict)
     all_actions = passive_actions + player_actions
 
     numeric_actions = [val for val in all_actions if isinstance(val, (int, float))]
+    monitor_wait = periodic_monitor.seconds_until_next_snapshot(game_counter)
+    if monitor_wait is not None and monitor_wait > 0:
+        numeric_actions.append(monitor_wait)
     if numeric_actions:
         min_elapsed = min(numeric_actions)
     elif len(all_actions) > 0:

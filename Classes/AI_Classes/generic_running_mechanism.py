@@ -76,17 +76,32 @@ class base_controller(player.Player):
                     current_stockpile[i] = updated_amount
             curr_village.stored = current_stockpile
 
-            if len(curr_village.currently_upgrading) > 0:
-                job = curr_village.currently_upgrading[0]
+            completed_jobs = curr_village.advance_upgrade_jobs(local_duration_slept)
+            for job in completed_jobs:
                 location = getattr(curr_village, "location", None)
-                # [ISS-015] still relying on nested lists; swap to structured job records when queue logic is rewritten.
-                if len(job) == 2:
+                job_type = job.get("type")
+                if job_type == "building":
                     curr_village.building_upgraded(job)
                     run_logger.log_completion(
                         player=self.name,
                         village_location=location,
                         job_type="building",
-                        target=str(job),
+                        target=curr_village.describe_job(job),
+                        population=curr_village.population,
+                        culture_rate=curr_village.culture_points_rate,
+                        culture_total=curr_village.culture_points_total,
+                        total_yield=curr_village.total_yield,
+                        resources=curr_village.stored.copy(),
+                        storage_cap=curr_village.storage_cap.copy(),
+                        ai_label=self.ai_label,
+                    )
+                elif job_type == "field":
+                    curr_village.field_upgraded(job)
+                    run_logger.log_completion(
+                        player=self.name,
+                        village_location=location,
+                        job_type="field",
+                        target=curr_village.describe_job(job),
                         population=curr_village.population,
                         culture_rate=curr_village.culture_points_rate,
                         culture_total=curr_village.culture_points_total,
@@ -96,20 +111,7 @@ class base_controller(player.Player):
                         ai_label=self.ai_label,
                     )
                 else:
-                    curr_village.field_upgraded(job[0])
-                    run_logger.log_completion(
-                        player=self.name,
-                        village_location=location,
-                        job_type="field",
-                        target=job[0],
-                        population=curr_village.population,
-                        culture_rate=curr_village.culture_points_rate,
-                        culture_total=curr_village.culture_points_total,
-                        total_yield=curr_village.total_yield,
-                        resources=curr_village.stored.copy(),
-                        storage_cap=curr_village.storage_cap.copy(),
-                        ai_label=self.ai_label,
-                    )
+                    curr_village.remove_upgrade_job(job.get("id"))
 
             possible_actions = curr_village.possible_buildings()
             merged_list = [
@@ -136,68 +138,55 @@ class base_controller(player.Player):
                 else:
                     chosen_item = None
 
-            if len(curr_village.currently_upgrading) != 0:
+            if chosen_item is None:
                 run_logger.log_action(
                     player=self.name,
                     village_location=getattr(curr_village, "location", None),
-                    action_type="queue_blocked",
+                    action_type="idle",
                     target=None,
                     wait_time=None,
-                    reason="queue already busy",
+                    reason="no available upgrades",
                     population=curr_village.population,
                     culture_rate=curr_village.culture_points_rate,
                     culture_total=curr_village.culture_points_total,
                     total_yield=curr_village.total_yield,
                     ai_label=self.ai_label,
                 )
-                raise ValueError("I have tried to initiate an upgrade, but I'm already upgrading something - why?")
             else:
-                if chosen_item is None:
-                    run_logger.log_action(
-                        player=self.name,
-                        village_location=getattr(curr_village, "location", None),
-                        action_type="idle",
-                        target=None,
-                        wait_time=None,
-                        reason="no available upgrades",
-                        population=curr_village.population,
-                        culture_rate=curr_village.culture_points_rate,
-                        culture_total=curr_village.culture_points_total,
-                        total_yield=curr_village.total_yield,
-                        ai_label=self.ai_label,
+                reset_time = True
+                item_type = chosen_item.get("type")
+                if item_type == "building":
+                    wait_time = curr_village.upgrade_building(
+                        [chosen_item["slot"], chosen_item["name"]]
                     )
+                    target_repr = chosen_item["name"]
+                    action_label = "upgrade_building"
+                elif item_type == "field":
+                    field_id = chosen_item["field_id"]
+                    wait_time = curr_village.upgrade_field(field_id)
+                    target_repr = field_id
+                    action_label = "upgrade_field"
                 else:
-                    reset_time = True
-                    item_type = chosen_item.get("type")
-                    if item_type == "building":
-                        wait_time = curr_village.upgrade_building(
-                            [chosen_item["slot"], chosen_item["name"]]
-                        )
-                        target_repr = chosen_item["name"]
-                        action_label = "upgrade_building"
-                    elif item_type == "field":
-                        field_id = chosen_item["field_id"]
-                        wait_time = curr_village.upgrade_field(field_id)
-                        target_repr = field_id
-                        action_label = "upgrade_field"
-                    else:
-                        wait_time = None
-                        target_repr = None
-                        action_label = "unknown"
-                    run_logger.log_action(
-                        player=self.name,
-                        village_location=getattr(curr_village, "location", None),
-                        action_type=action_label,
-                        target=target_repr,
-                        wait_time=wait_time,
-                        population=curr_village.population,
-                        culture_rate=curr_village.culture_points_rate,
-                        culture_total=curr_village.culture_points_total,
-                        total_yield=curr_village.total_yield,
-                        ai_label=self.ai_label,
-                    )
-                    if wait_time is not None:
-                        wait_time_list.append(wait_time)
+                    wait_time = None
+                    target_repr = None
+                    action_label = "unknown"
+                run_logger.log_action(
+                    player=self.name,
+                    village_location=getattr(curr_village, "location", None),
+                    action_type=action_label,
+                    target=target_repr,
+                    wait_time=wait_time,
+                    population=curr_village.population,
+                    culture_rate=curr_village.culture_points_rate,
+                    culture_total=curr_village.culture_points_total,
+                    total_yield=curr_village.total_yield,
+                    ai_label=self.ai_label,
+                )
+
+            next_wait = curr_village.next_upgrade_completion()
+            if next_wait is not None:
+                reset_time = True
+                wait_time_list.append(next_wait)
 
         if reset_time and wait_time_list:
             true_wait_time = min(wait_time_list)
