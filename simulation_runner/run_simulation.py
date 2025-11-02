@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+from typing import Optional
 if __package__ in (None, ""):
     ROOT = Path(__file__).resolve().parents[1]  # repo root
     if str(ROOT) not in sys.path:
@@ -69,8 +70,14 @@ def _execute_simulation(num_ticks, num_players, base_random_seed, map_radius, la
         }
     )
 
+    goal_reached_at: Optional[int] = None
     for _ in range(num_ticks):
         progress_state.simulate_time(base_map, player_dict)
+        total_settlements = sum(player.settle_points for player in player_dict.values())
+        run_context["global_settles_completed"] = total_settlements
+        if total_settlements >= run_context["settle_goal"]:
+            goal_reached_at = progress_state.game_counter
+            break
 
     final_ticks = progress_state.turn_counter
     final_time = progress_state.game_counter
@@ -82,6 +89,9 @@ def _execute_simulation(num_ticks, num_players, base_random_seed, map_radius, la
             "run_variant": label,
             "settle_points": {player.name: player.settle_points for player in player_dict.values()},
             "global_settles_completed": run_context["global_settles_completed"],
+            "settle_goal": run_context["settle_goal"],
+            "settle_goal_reached_time": goal_reached_at,
+            "settle_threshold_met": goal_reached_at is not None,
         }
     )
     run_id = log_output.get("metadata", {}).get("run_id", "unknown")
@@ -89,10 +99,16 @@ def _execute_simulation(num_ticks, num_players, base_random_seed, map_radius, la
         periodic_monitor.export_results(run_id, label)
     except RuntimeError as exc:
         print(f"[{label}] Monitoring export skipped: {exc}")
-    print(
-        f"[{label}] Completed with {len(log_output['events'])} events "
-        f"across {final_ticks} ticks."
-    )
+    if goal_reached_at is not None:
+        print(
+            f"[{label}] Settlement goal reached at t={goal_reached_at}s; "
+            f"completed after {final_ticks} ticks with {len(log_output['events'])} events."
+        )
+    else:
+        print(
+            f"[{label}] Completed with {len(log_output['events'])} events "
+            f"across {final_ticks} ticks."
+        )
     return log_output
 
 

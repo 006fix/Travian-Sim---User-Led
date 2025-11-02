@@ -25,16 +25,16 @@ def reset(interval: int = SNAPSHOT_INTERVAL_DEFAULT, variant: Optional[str] = No
 
 
 def _iter_villages(player_dict: Dict[str, object]):
-    """Yield (player, ai_label, village) triples from the controller dictionary."""
+    """Yield (controller, player, ai_label, village) tuples from the controller dictionary."""
     for controller in player_dict.values():
         ai_label = getattr(controller, "ai_label", "Unknown")
         player_name = getattr(controller, "name", None)
         villages = getattr(controller, "villages", [])
         for village in villages:
-            yield player_name, ai_label, village
+            yield controller, player_name, ai_label, village
 
 
-def _serialise_village_record(player_name: str, ai_label: str, village, game_time: int) -> Dict[str, object]:
+def _serialise_village_record(player_name: str, ai_label: str, village, game_time: int, controller: Optional[object] = None) -> Dict[str, object]:
     """Convert a single village state into a snapshot record."""
     stored = list(getattr(village, "stored", [0, 0, 0, 0]))
     location = getattr(village, "location", None)
@@ -52,6 +52,9 @@ def _serialise_village_record(player_name: str, ai_label: str, village, game_tim
     iron_yield = yield_values[2] * 3600 if len(yield_values) > 2 else 0.0
     crop_yield = yield_values[3] * 3600 if len(yield_values) > 3 else 0.0
     crop_stock = stored[3] if len(stored) > 3 else 0.0
+    controller_ref = controller or getattr(village, "owner", None)
+    settlers_built = getattr(controller_ref, "settlers_built", 0)
+    settle_points = getattr(controller_ref, "settle_points", 0)
     return {
         "time": int(game_time),
         "minutes": game_time / 60.0,
@@ -67,6 +70,8 @@ def _serialise_village_record(player_name: str, ai_label: str, village, game_tim
         "total_yield": total_yield,
         "culture_total": culture_total,
         "culture_rate": culture_rate,
+        "settlers_built": settlers_built,
+        "settle_points": settle_points,
         "run_variant": _current_variant,
         **_current_metadata,
     }
@@ -74,13 +79,13 @@ def _serialise_village_record(player_name: str, ai_label: str, village, game_tim
 
 def capture_snapshot(game_time: int, player_dict: Dict[str, object]) -> None:
     """Persist the current village state for every controller."""
-    for player_name, ai_label, village in _iter_villages(player_dict):
+    for controller, player_name, ai_label, village in _iter_villages(player_dict):
         location = getattr(village, "location", None)
         key = (game_time, player_name, location)
         if key in _snapshot_keys:
             continue
         _snapshot_keys.add(key)
-        _snapshots.append(_serialise_village_record(player_name, ai_label, village, game_time))
+        _snapshots.append(_serialise_village_record(player_name, ai_label, village, game_time, controller))
 
 
 def capture_initial(game_time: int, player_dict: Dict[str, object]) -> None:
@@ -140,6 +145,8 @@ def export_results(run_id: str, output_label: str, output_dir: Optional[Path] = 
         "population",
         "culture_total",
         "culture_rate",
+        "settlers_built",
+        "settle_points",
     ]
     grouped = (
         df.groupby(["run_variant", "ai_label", "time"])[metrics]

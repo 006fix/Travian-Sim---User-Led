@@ -146,6 +146,7 @@ class base_controller(player.Player):
             completed_jobs = curr_village.advance_upgrade_jobs(local_duration_slept)
             for job in completed_jobs:
                 location = getattr(curr_village, "location", None)
+                owner = getattr(curr_village, "owner", None)
                 job_type = job.get("type")
                 if job_type == "building":
                     curr_village.building_upgraded(job)
@@ -161,6 +162,9 @@ class base_controller(player.Player):
                         resources=curr_village.stored.copy(),
                         storage_cap=curr_village.storage_cap.copy(),
                         ai_label=self.ai_label,
+                        game_time=current_time,
+                        settlers_built=getattr(owner, "settlers_built", None),
+                        settle_points=getattr(owner, "settle_points", None),
                     )
                 elif job_type == "field":
                     curr_village.field_upgraded(job)
@@ -176,9 +180,11 @@ class base_controller(player.Player):
                         resources=curr_village.stored.copy(),
                         storage_cap=curr_village.storage_cap.copy(),
                         ai_label=self.ai_label,
+                        game_time=current_time,
+                        settlers_built=getattr(owner, "settlers_built", None),
+                        settle_points=getattr(owner, "settle_points", None),
                     )
                 elif job_type == "train_settler":
-                    owner = getattr(curr_village, "owner", None)
                     if owner is not None:
                         owner.settlers_built += 1
                     run_logger.log_completion(
@@ -193,10 +199,12 @@ class base_controller(player.Player):
                         resources=curr_village.stored.copy(),
                         storage_cap=curr_village.storage_cap.copy(),
                         ai_label=self.ai_label,
+                        game_time=current_time,
+                        settlers_built=getattr(owner, "settlers_built", None),
+                        settle_points=getattr(owner, "settle_points", None),
                     )
                     curr_village.remove_upgrade_job(job.get("id"))
                 elif job_type == "settle":
-                    owner = getattr(curr_village, "owner", None)
                     if owner is not None and owner.settlers_built >= 3:
                         owner.settlers_built -= 3
                         owner.settle_points += 1
@@ -213,6 +221,9 @@ class base_controller(player.Player):
                         resources=curr_village.stored.copy(),
                         storage_cap=curr_village.storage_cap.copy(),
                         ai_label=self.ai_label,
+                        game_time=current_time,
+                        settlers_built=getattr(owner, "settlers_built", None),
+                        settle_points=getattr(owner, "settle_points", None),
                     )
                     curr_village.remove_upgrade_job(job.get("id"))
                 else:

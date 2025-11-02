@@ -10,8 +10,10 @@ if __package__ in (None, ""):
 
 import random
 import json
+from unittest import mock
 
 from master_controller.simulation_constraints import create_simulation_constraints
+from master_controller import game_rules
 from Specific_Functions.map_creation import map_creation, modify_base_map
 from Specific_Functions.populate_players import (
     populate_players,
@@ -24,6 +26,7 @@ from Base_Data import Fields_Data as f_data
 from Base_Data import Building_Data as b_data
 from simulation_runner import game_state_progression as progress_state
 from simulation_runner import run_logger
+from simulation_runner import run_simulation as run_sim
 
 
 def _summarise_map(world: Dict[str, object]) -> List[Dict[str, object]]:
@@ -448,7 +451,144 @@ def test_run_logger_generates_scoreboard() -> Tuple[bool, str]:
         return False, "Scoreboard did not capture Alpha's final stats."
     if beta_entry["actions"] != 1 or beta_entry["population"] != 4:
         return False, "Scoreboard did not capture Beta's action."
+    if alpha_entry.get("settle_points", 0) != 0 or beta_entry.get("settle_points", 0) != 0:
+        return False, "Scoreboard should expose settle_points with zero default for players without settlements."
     return True, "Scoreboard file summarises per-player metrics."
+
+
+def test_settler_training_increments_counter() -> Tuple[bool, str]:
+    """Settler training should consume resources and increment the owner's settler count."""
+    run_logger.reset()
+    world = _build_world(40, seed=801)
+    rng_holder = random.Random(31)
+    players = populate_players_with_villages(world, 1, rng_holder=rng_holder)
+    controller = next(iter(players.values()))
+    village_obj = controller.villages[0]
+    village_obj.owner = controller
+    village_obj.buildings[3] = ["residence", 10, True]
+    village_obj.available_buildings.discard("residence")
+    village_obj.stored = game_rules.SETTLER_COST.copy()
+    for field in village_obj.fields.values():
+        field.field_yield = 0
+    controller.settlers_built = 0
+    controller.Last_Active = 0
+
+    duration = village_obj.start_train_settler()
+    if duration is None or duration <= 0:
+        return False, "Failed to queue settler training job."
+    if len(village_obj.currently_upgrading) != 1:
+        return False, "Settler training job not enqueued correctly."
+
+    controller.will_i_act(current_time=duration, global_last_active=0)
+
+    if controller.settlers_built != 1:
+        return False, "Settler completion did not increment settlers_built."
+    if village_obj.currently_upgrading:
+        return False, "Settler job still present after completion."
+    if any(value != 0 for value in village_obj.stored):
+        return False, "Settler training did not consume the provided resources."
+    return True, "Settler training consumes resources and increments settlers_built."
+
+
+def test_settle_job_consumes_settlers_and_awards_points() -> Tuple[bool, str]:
+    """Settling should spend three settlers and award settlement points to the owner."""
+    run_logger.reset()
+    world = _build_world(40, seed=802)
+    rng_holder = random.Random(17)
+    players = populate_players_with_villages(world, 1, rng_holder=rng_holder)
+    controller = next(iter(players.values()))
+    village_obj = controller.villages[0]
+    village_obj.owner = controller
+    village_obj.buildings[3] = ["residence", 10, True]
+    village_obj.available_buildings.discard("residence")
+    for field in village_obj.fields.values():
+        field.field_yield = 0
+    controller.settlers_built = 3
+    controller.settle_points = 0
+    controller.culture_points = game_rules.CP_THRESHOLD
+    controller.Last_Active = 0
+    village_obj.stored = game_rules.SETTLE_COST.copy()
+
+    duration = village_obj.start_settle()
+    if duration is None or duration <= 0:
+        return False, "Failed to queue settle job."
+    if len(village_obj.currently_upgrading) != 1:
+        return False, "Settle job not enqueued correctly."
+
+    controller.will_i_act(current_time=duration, global_last_active=0)
+
+    if controller.settlers_built != 0:
+        return False, "Settlers were not deducted upon settlement completion."
+    if controller.settle_points != 1:
+        return False, "Settlement completion did not award a settlement point."
+    if village_obj.currently_upgrading:
+        return False, "Settle job remained in the queue after completion."
+    if any(value != 0 for value in village_obj.stored):
+        return False, "Settlement job did not consume the provided resources."
+    return True, "Settlement completion spends settlers and awards settlement points."
+
+
+def test_simulation_stops_when_settlement_goal_met() -> Tuple[bool, str]:
+    """The simulation runner should terminate once the settlement goal is met."""
+    run_logger.reset()
+    call_count = {"value": 0}
+
+    def fake_simulate(map_dict, player_dict):
+        call_count["value"] += 1
+        progress_state.turn_counter += 1
+        progress_state.game_counter += 60
+        progress_state.time_elapsed = 60
+        progress_state.time_will_elapse = 0
+        progress_state.global_last_active = progress_state.game_counter
+        players_list = list(player_dict.values())
+        if not players_list:
+            return
+        goal = game_rules.target_settles(len(players_list))
+        players_list[0].settle_points = goal
+        for other in players_list[1:]:
+            other.settle_points = 0
+
+    with mock.patch("simulation_runner.run_simulation.progress_state.simulate_time", side_effect=fake_simulate):
+        log_output = run_sim._execute_simulation(
+            num_ticks=10,
+            num_players=1,
+            base_random_seed=0,
+            map_radius=80,
+            label="test",
+        )
+
+    if call_count["value"] != 1:
+        return False, f"Simulation did not stop after reaching the settlement goal (iterations={call_count['value']})."
+
+    summary_event = next((event for event in log_output["events"] if event.get("event") == "run_summary"), None)
+    if summary_event is None:
+        return False, "Run summary event missing from log output."
+    if not summary_event.get("settle_threshold_met"):
+        return False, "Settlement threshold was not flagged as met."
+    if summary_event.get("settle_goal_reached_time") is None:
+        return False, "No timestamp recorded for when the settlement goal was reached."
+
+    settle_points_map = summary_event.get("settle_points", {})
+    if not settle_points_map:
+        return False, "Settlement points summary missing from run summary."
+
+    settle_goal = summary_event.get("settle_goal")
+    winner_list = summary_event.get("settle_winners", [])
+    if len(winner_list) != 1:
+        return False, f"Expected a single settlement winner, found {winner_list}."
+    winner = winner_list[0]
+    if settle_points_map.get(winner, 0) < max(1, settle_goal or 0):
+        return False, "Winner did not record settlement points equal to the goal."
+
+    scoreboard_players = log_output.get("scoreboard", {}).get("players", [])
+    if scoreboard_players:
+        top_entry = scoreboard_players[0]
+        if top_entry.get("player") != winner:
+            return False, "Scoreboard leader does not match the settlement winner."
+        if top_entry.get("settle_points", 0) < max(1, settle_goal or 0):
+            return False, "Scoreboard did not persist settlement points for the winner."
+
+    return True, "Simulation terminates once the settlement goal is met and records the winner."
 
 
 def test_crop_yield_uses_population_consumption() -> Tuple[bool, str]:
@@ -605,6 +745,9 @@ TESTS = [
     ("game_state_progression tick advances", test_game_state_progression_tick_advances),
     ("run_logger captures village metrics", test_logger_records_village_metrics),
     ("run_logger generates scoreboard", test_run_logger_generates_scoreboard),
+    ("Settler training increments counter", test_settler_training_increments_counter),
+    ("Settlement completion awards points", test_settle_job_consumes_settlers_and_awards_points),
+    ("Simulation stops when settlement goal met", test_simulation_stops_when_settlement_goal_met),
     ("crop yield subtracts population usage", test_crop_yield_uses_population_consumption),
     ("crop storage never negative", test_crop_storage_clamped_at_zero),
     ("main building speed modifier applies", test_main_building_speed_modifier_applies),

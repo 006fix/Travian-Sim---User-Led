@@ -113,6 +113,9 @@ def log_completion(
     resources: Optional[List[float]] = None,
     storage_cap: Optional[List[float]] = None,
     ai_label: Optional[str] = None,
+    game_time: Optional[int] = None,
+    settlers_built: Optional[int] = None,
+    settle_points: Optional[int] = None,
 ) -> None:
     """Record completion of a queued job."""
     payload: Dict[str, Any] = {
@@ -121,6 +124,8 @@ def log_completion(
         "job_type": job_type,
         "target": target,
     }
+    if game_time is not None:
+        payload["game_time"] = game_time
     if population is not None:
         payload["population"] = population
     if culture_rate is not None:
@@ -135,16 +140,55 @@ def log_completion(
         payload["storage_cap"] = list(storage_cap)
     if ai_label is not None:
         payload["ai_label"] = ai_label
+    if settlers_built is not None:
+        payload["settlers_built"] = settlers_built
+    if settle_points is not None:
+        payload["settle_points"] = settle_points
     log_event("completion", payload)
 
 
 
 def finalise_run(summary: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Close out the run and return the collected log."""
+    if summary is None:
+        summary = {}
+    settle_goal = RUN_METADATA.get("settle_goal")
+    if settle_goal is not None and "settle_goal" not in summary:
+        summary["settle_goal"] = settle_goal
+    player_settle_points: Dict[str, int] = {}
+    total_settlements = 0
+    settle_goal_time: Optional[int] = None
+    for event in RUN_EVENTS:
+        if event.get("event") != "completion" or event.get("job_type") != "settle":
+            continue
+        total_settlements += 1
+        player = event.get("player")
+        if player is not None:
+            points = event.get("settle_points")
+            if points is not None:
+                player_settle_points[player] = points
+            else:
+                player_settle_points[player] = player_settle_points.get(player, 0) + 1
+        if settle_goal_time is None and isinstance(settle_goal, int) and total_settlements >= settle_goal:
+            settle_goal_time = event.get("game_time")
+    summary.setdefault("total_settlements", total_settlements)
+    summary.setdefault("settle_goal_reached_time", settle_goal_time)
+    summary.setdefault("settle_points", player_settle_points)
+    threshold_met = False
+    if isinstance(settle_goal, int):
+        threshold_met = total_settlements >= settle_goal
+    summary.setdefault("settle_threshold_met", threshold_met)
+    settle_points_map = summary.get("settle_points") or {}
+    if isinstance(settle_points_map, dict):
+        max_points = max(settle_points_map.values(), default=0)
+        winners = [player for player, points in settle_points_map.items() if points == max_points and points > 0]
+    else:
+        winners = []
+    summary.setdefault("settle_winners", winners)
     if summary is not None:
         log_event("run_summary", summary)
     payload = {"metadata": RUN_METADATA.copy(), "events": list(RUN_EVENTS)}
-    scoreboard = _build_scoreboard()
+    scoreboard = _build_scoreboard(summary.get("settle_points") if isinstance(summary.get("settle_points"), dict) else None)
     payload["scoreboard"] = {"players": scoreboard}
     run_id = _write_log_to_disk(payload)
     scoreboard_path = _write_scoreboard_to_disk(run_id, scoreboard)
@@ -173,7 +217,7 @@ def _write_scoreboard_to_disk(run_id: str, scoreboard: List[Dict[str, Any]]) -> 
     return scoreboard_path
 
 
-def _build_scoreboard() -> List[Dict[str, Any]]:
+def _build_scoreboard(settle_points_map: Optional[Dict[str, int]] = None) -> List[Dict[str, Any]]:
     per_player: Dict[str, Dict[str, Any]] = {}
     for event in RUN_EVENTS:
         player = event.get("player")
@@ -181,17 +225,24 @@ def _build_scoreboard() -> List[Dict[str, Any]]:
             continue
         entry = per_player.setdefault(
             player,
-            {"actions": 0, "completions": 0, "last_event": None},
+            {"actions": 0, "completions": 0, "last_event": None, "settlers_built": 0, "settle_points": 0},
         )
         if event.get("event") == "action":
             entry["actions"] += 1
         elif event.get("event") == "completion":
             entry["completions"] += 1
         entry["last_event"] = event
+        if "settlers_built" in event:
+            entry["settlers_built"] = event["settlers_built"]
+        if "settle_points" in event:
+            entry["settle_points"] = event["settle_points"]
 
     scoreboard: List[Dict[str, Any]] = []
     for player, stats in per_player.items():
         last_event = stats.get("last_event") or {}
+        settle_points = stats.get("settle_points", 0)
+        if settle_points_map is not None:
+            settle_points = settle_points_map.get(player, settle_points)
         scoreboard.append(
             {
                 "player": player,
@@ -204,6 +255,9 @@ def _build_scoreboard() -> List[Dict[str, Any]]:
                 "total_yield": last_event.get("total_yield"),
                 "resources": last_event.get("resources"),
                 "storage_cap": last_event.get("storage_cap"),
+                "settlers_built": stats.get("settlers_built"),
+                "settle_points": settle_points,
+                "last_game_time": last_event.get("game_time"),
                 "last_village": _serialise_location(last_event.get("village")),
                 "last_event_type": last_event.get("event"),
                 "last_action_type": last_event.get("action_type") or last_event.get("job_type"),
@@ -213,6 +267,7 @@ def _build_scoreboard() -> List[Dict[str, Any]]:
         )
     scoreboard.sort(
         key=lambda item: (
+            -(item.get("settle_points") or 0),
             -(item.get("population") or 0),
             -(item.get("culture_total") or 0.0),
         )
