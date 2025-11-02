@@ -20,8 +20,6 @@ class Village(base_squares.Square):
                     17: '', 18: '', 19: '', 20: '', 21: '', 22: ''}
         #structure of the below - reference key for buildings_dict lookup, level, upgradeable bool.
         self.buildings[0] = ['main_building', 1, True]
-        self.buildings[1] = ['warehouse', 0, True]
-        self.buildings[2] = ['granary', 0, True]
 
         self.available_buildings = set(b_data.building_dict.keys())
         for slot_info in self.buildings.values():
