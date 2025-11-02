@@ -125,16 +125,15 @@ class Village(base_squares.Square):
                 #if upgradeable
                 if holdval[2] == True:
                     keyval = holdval[0]
-                    entry, upgradeable = self._get_building_entry(keyval, holdval_level)
-                    if entry is None or upgradeable is False:
-                        continue
+                    entry, _ = self._get_building_entry(keyval, holdval_level)
                     next_entry, _ = self._get_building_entry(keyval, holdval_level + 1)
                     if next_entry is None:
                         continue
-                    pop_delta = next_entry[2] - entry[2]
+                    previous_pop = entry[2] if entry is not None else 0
+                    pop_delta = next_entry[2] - previous_pop
                     if crop_yield_per_hour <= 0 or pop_delta >= crop_yield_per_hour:
                         continue
-                    upgrade_cost = entry[0]
+                    upgrade_cost = next_entry[0]
                     #default to assuming enough res, then make false if not true
                     enough_res = True
                     for i in range(4):
@@ -209,16 +208,12 @@ class Village(base_squares.Square):
             upgradeable_check = relevant_target[2]
         if upgradeable_check is not True:
             raise ValueError("You appear to have attempted to upgrade a building that cannot be upgraded :(")
-        entry, _ = self._get_building_entry(building_data_key, current_level)
-        if entry is None:
-            next_entry, _ = self._get_building_entry(building_data_key, current_level + 1)
-            if next_entry is None:
-                raise ValueError(f"Building data missing for {building_data_key} at level {current_level + 1}")
-            upgrade_cost = next_entry[0]
-            upgrade_time = next_entry[3]
-        else:
-            upgrade_cost = entry[0]
-            upgrade_time = entry[3]
+        target_level = current_level + 1
+        target_entry, _ = self._get_building_entry(building_data_key, target_level)
+        if target_entry is None:
+            raise ValueError(f"Building data missing for {building_data_key} at level {target_level}")
+        upgrade_cost = target_entry[0]
+        upgrade_time = target_entry[3]
 
         speed_modifier = self._main_building_speed_modifier()
         true_upgrade_time = gen_func.sec_val(upgrade_time)
@@ -235,7 +230,7 @@ class Village(base_squares.Square):
         job_payload = {
             'slot': building_dict_key,
             'building': building_data_key,
-            'target_level': current_level + 1,
+            'target_level': target_level,
         }
         self._register_upgrade_job('building', job_payload, sleep_duration)
         return sleep_duration
@@ -438,7 +433,7 @@ class Village(base_squares.Square):
                     return modifier
             except KeyError:
                 pass
-        return 5
+        return 5  # [ISS-034] relies on the main building remaining in slot 0; revisit when slots become dynamic.
 
     def _get_building_entry(self, building_name, level):
         """Safely fetch building data and indicate if further upgrades are available."""
@@ -446,12 +441,13 @@ class Village(base_squares.Square):
         if table is None:
             return None, False
         entry = table.get(level)
+        next_entry = table.get(level + 1) if entry is not None else None
         if entry is None:
+            # level 0 (or missing) entries are treated as having no data but may still be upgradeable.
+            if level == 0 and table.get(1) is not None:
+                return None, True
             return None, False
-        cost = entry[0]
-        upgradeable = True
-        if not isinstance(cost, (list, tuple)) or len(cost) == 0 or cost[0] is False:
-            upgradeable = False
+        upgradeable = next_entry is not None
         return entry, upgradeable
 
     def _register_upgrade_job(self, job_type, payload, duration):
