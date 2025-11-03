@@ -80,11 +80,9 @@ class base_controller(player.Player):
         if hasattr(village, "_residence_level"):
             residence_level = village._residence_level()
 
-        if built_settlers >= target_settlers:
-            # Already holding the desired number of settlers; wait for the settle job instead of training more.
-            return False
+        needs_more_settlers = built_settlers < target_settlers
 
-        if (built_settlers + pending_trainers) < target_settlers and residence_level >= required_residence:
+        if needs_more_settlers and (built_settlers + pending_trainers) < target_settlers and residence_level >= required_residence:
             wait_time = village.start_train_settler()
             if wait_time:
                 self._log_action_event(village, "train_settler", "train_settler", wait_time)
@@ -92,6 +90,8 @@ class base_controller(player.Player):
                 if next_wait is not None:
                     wait_time_list.append(next_wait)
                 return True
+        if needs_more_settlers or pending_trainers > 0:
+            return False
 
         if self._count_jobs("settle") > 0:
             return False
