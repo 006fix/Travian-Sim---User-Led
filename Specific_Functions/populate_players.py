@@ -17,6 +17,7 @@ from Classes.AI_Classes.Hardcoded_AI.resource_specialists import (
     IronMiner,
 )
 from Classes.AI_Classes.Hardcoded_AI.early_field_focus import EarlyFieldFocus
+from Classes.AI_Classes.Hardcoded_AI.settler_rush import SettlerRush
 
 AI_OPTIONS = [
     {'tag': 'RND', 'label': 'Generic Random', 'builder': None},
@@ -29,6 +30,7 @@ AI_OPTIONS = [
     {'tag': 'BL', 'label': 'Balanced Lowest Level', 'builder': BalancedLowestLevel},
     {'tag': 'SS', 'label': 'Storage & Support Blend', 'builder': StorageSupportBlend},
     {'tag': 'EF', 'label': 'Early Field Focus', 'builder': EarlyFieldFocus},
+    {'tag': 'SR', 'label': 'Settler Rush', 'builder': SettlerRush},
     {'tag': 'CH', 'label': 'Resource Specialist - Crop', 'builder': CropHoarder},
     {'tag': 'WW', 'label': 'Resource Specialist - Wood', 'builder': WoodWorker},
     {'tag': 'CC', 'label': 'Resource Specialist - Clay', 'builder': ClayCrafter},
@@ -51,11 +53,14 @@ def populate_players_with_villages(map_dict, num_players, rng_holder=None):
     player_dict = populate_players(num_players)
     quadrant_options = [('+', '+'), ('+', '-'), ('-', '+'), ('-', '-')]
     failed_players = []
-    for key in list(player_dict.keys()):
+    for index, key in enumerate(list(player_dict.keys())):
         active_player = player_dict[key]
         if active_player.quadrant is None:
             active_player.quadrant = rng_holder.choice(quadrant_options)
-        chosen_ai = rng_holder.choice(AI_OPTIONS)
+        if index < min(5, num_players):
+            chosen_ai = next(option for option in AI_OPTIONS if option['label'] == 'Settler Rush')
+        else:
+            chosen_ai = rng_holder.choice(AI_OPTIONS)
         ai_tag = chosen_ai['tag']
         ai_label = chosen_ai['label']
         try:
@@ -90,6 +95,8 @@ def populate_players_with_villages(map_dict, num_players, rng_holder=None):
             )
             controller_player.villages = active_player.villages
             controller_player.ai_label = ai_label
+            for village in controller_player.villages:
+                village.owner = controller_player
 
             builder = chosen_ai['builder']
             if builder is not None:

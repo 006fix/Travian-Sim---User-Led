@@ -147,7 +147,7 @@ def run_simulation(num_ticks, num_players, base_random_seed, map_radius, log_set
 if __name__ == "__main__":
     run_simulation(
         num_ticks=40000,
-        num_players=40,
+        num_players=10,
         base_random_seed=42,
         map_radius=50,
         log_settlement_events=True,

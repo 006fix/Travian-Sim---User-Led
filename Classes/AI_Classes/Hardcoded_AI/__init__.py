@@ -13,6 +13,7 @@ from Classes.AI_Classes.Hardcoded_AI.resource_specialists import (
     IronMiner,
 )
 from Classes.AI_Classes.Hardcoded_AI.early_field_focus import EarlyFieldFocus
+from Classes.AI_Classes.Hardcoded_AI.settler_rush import SettlerRush
 
 __all__ = [
     'FieldFocus',
@@ -24,6 +25,7 @@ __all__ = [
     'BalancedLowestLevel',
     'StorageSupportBlend',
     'EarlyFieldFocus',
+    'SettlerRush',
     'CropHoarder',
     'WoodWorker',
     'ClayCrafter',
