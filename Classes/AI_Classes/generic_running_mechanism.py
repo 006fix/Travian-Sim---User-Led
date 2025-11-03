@@ -80,6 +80,10 @@ class base_controller(player.Player):
         if hasattr(village, "_residence_level"):
             residence_level = village._residence_level()
 
+        if built_settlers >= target_settlers:
+            # Already holding the desired number of settlers; wait for the settle job instead of training more.
+            return False
+
         if (built_settlers + pending_trainers) < target_settlers and residence_level >= required_residence:
             wait_time = village.start_train_settler()
             if wait_time:
@@ -88,9 +92,6 @@ class base_controller(player.Player):
                 if next_wait is not None:
                     wait_time_list.append(next_wait)
                 return True
-
-        if built_settlers < target_settlers:
-            return False
 
         if self._count_jobs("settle") > 0:
             return False
@@ -126,8 +127,13 @@ class base_controller(player.Player):
         wait_time_list = []
         reset_time = False
 
+        total_culture = 0.0
+        total_culture_rate = 0.0
+
         for curr_village in self.villages:
             curr_village.culture_points_total += curr_village.culture_points_rate * (local_duration_slept / 3600)
+            total_culture += curr_village.culture_points_total
+            total_culture_rate += curr_village.culture_points_rate
             resources_gained = curr_village.yield_calc()
             for i in range(len(resources_gained)):
                 resources_gained[i] *= local_duration_slept
@@ -287,6 +293,9 @@ class base_controller(player.Player):
             if next_wait is not None:
                 reset_time = True
                 wait_time_list.append(next_wait)
+
+        self.culture_points = total_culture
+        self.culture_points_rate = total_culture_rate
 
         if reset_time and wait_time_list:
             true_wait_time = min(wait_time_list)

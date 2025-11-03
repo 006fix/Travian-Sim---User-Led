@@ -53,14 +53,11 @@ def populate_players_with_villages(map_dict, num_players, rng_holder=None):
     player_dict = populate_players(num_players)
     quadrant_options = [('+', '+'), ('+', '-'), ('-', '+'), ('-', '-')]
     failed_players = []
-    for index, key in enumerate(list(player_dict.keys())):
+    for key in list(player_dict.keys()):
         active_player = player_dict[key]
         if active_player.quadrant is None:
             active_player.quadrant = rng_holder.choice(quadrant_options)
-        if index < min(5, num_players):
-            chosen_ai = next(option for option in AI_OPTIONS if option['label'] == 'Settler Rush')
-        else:
-            chosen_ai = rng_holder.choice(AI_OPTIONS)
+        chosen_ai = rng_holder.choice(AI_OPTIONS)
         ai_tag = chosen_ai['tag']
         ai_label = chosen_ai['label']
         try:

@@ -108,4 +108,5 @@ ext_update returns None pending future interaction logic.
 - **ISS-032** - Classes/AI_Classes/generic_running_mechanism.py: Settler completions should refund the population/crop consumption that the trained settlers were using; settling currently leaves villages permanently short by the three population consumed.
 - **ISS-033** - Classes/AI_Classes/generic_running_mechanism.py: The idle fallback still sleeps for 20,000 seconds; revise to wake on the next periodic monitor tick (15-minute cadence) once the controller scheduling hook is ready.
 - **ISS-034** - Classes/village.py: `_main_building_speed_modifier` still assumes the main building lives in slot 0; once building slots are dynamic that dependency needs to be removed or enforced.
+- **ISS-035** - Classes/AI_Classes/generic_running_mechanism.py: Temporary guard blocks settler training once three settlers are ready; remove or relax this when residence/palace-driven settler capacity is modelled properly.
 
