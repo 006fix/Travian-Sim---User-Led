@@ -26,7 +26,7 @@ def _reset_progress_state():
     progress_state.global_last_active = 0
 
 
-def _execute_simulation(num_ticks, num_players, base_random_seed, map_radius, label):
+def _execute_simulation(num_ticks, num_players, base_random_seed, map_radius, label, log_settlement_events=False):
     """Run a single simulation instance with the provided configuration."""
     # Derive constraints (seed may override map/player defaults downstream).
     radius, players = create_simulation_constraints(
@@ -38,6 +38,7 @@ def _execute_simulation(num_ticks, num_players, base_random_seed, map_radius, la
     base_map = map_creation(radius)
     base_map = modify_base_map(base_map)
     player_dict = populate_players_with_villages(base_map, players)
+    previous_settle_points = {player.name: player.settle_points for player in player_dict.values()}
     run_context = {
         "global_settles_completed": 0,
         "settle_goal": game_rules.target_settles(players),
@@ -75,6 +76,16 @@ def _execute_simulation(num_ticks, num_players, base_random_seed, map_radius, la
         progress_state.simulate_time(base_map, player_dict)
         total_settlements = sum(player.settle_points for player in player_dict.values())
         run_context["global_settles_completed"] = total_settlements
+        if log_settlement_events:
+            for player in player_dict.values():
+                current = player.settle_points
+                previous = previous_settle_points.get(player.name, 0)
+                if current > previous:
+                    print(
+                        f"[{label}] t={progress_state.game_counter}s tick={progress_state.turn_counter} "
+                        f"{player.name} completed settlement #{current}"
+                    )
+                previous_settle_points[player.name] = current
         if total_settlements >= run_context["settle_goal"]:
             goal_reached_at = progress_state.game_counter
             break
@@ -112,7 +123,7 @@ def _execute_simulation(num_ticks, num_players, base_random_seed, map_radius, la
     return log_output
 
 
-def run_simulation(num_ticks, num_players, base_random_seed, map_radius):
+def run_simulation(num_ticks, num_players, base_random_seed, map_radius, log_settlement_events=False):
     """Run the requested configuration, then a fixed comparison pass."""
     primary_log = _execute_simulation(
         num_ticks=num_ticks,
@@ -120,6 +131,7 @@ def run_simulation(num_ticks, num_players, base_random_seed, map_radius):
         base_random_seed=base_random_seed,
         map_radius=map_radius,
         label="primary",
+        log_settlement_events=log_settlement_events,
     )
     comparison_log = _execute_simulation(
         num_ticks=2000,
@@ -127,6 +139,7 @@ def run_simulation(num_ticks, num_players, base_random_seed, map_radius):
         base_random_seed=0,
         map_radius=map_radius,
         label="comparison",
+        log_settlement_events=log_settlement_events,
     )
     return primary_log, comparison_log
 
@@ -137,4 +150,5 @@ if __name__ == "__main__":
         num_players=40,
         base_random_seed=42,
         map_radius=50,
+        log_settlement_events=True,
     )
