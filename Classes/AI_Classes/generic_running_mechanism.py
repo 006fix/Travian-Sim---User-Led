@@ -74,6 +74,11 @@ class base_controller(player.Player):
         target_settlers = int(policy.get("train_target", 3))
         required_residence = int(policy.get("residence_level_required", 10))
 
+        settle_points = getattr(self, "settle_points", 0)
+        if settle_points >= 1:
+            # [ISS-036] Temporary lock: players stop after their first settlement; remove when multi-settlement rules land.
+            return False
+
         pending_trainers = self._count_jobs("train_settler")
         built_settlers = getattr(self, "settlers_built", 0)
         residence_level = 0
